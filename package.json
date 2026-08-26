@@ -1,0 +1,16 @@
+{
+  "name": "wasili-retailers-delivery-management-system",
+  "version": "2.0.0",
+  "description": "Wasili — Retailers Delivery Management System. Delivery coordination built to the Reflex Team Contract, on Appwrite.",
+  "main": "scripts/setup.js",
+  "scripts": {
+    "setup": "node scripts/setup.js",
+    "test": "node scripts/test-domain.js"
+  },
+  "author": "Veltrix Technologies",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "node-appwrite": "^28.0.0"
+  }
+}

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Wasili — Rider</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<header class="app-header">
+  <div class="brand">
+    <div class="mark" id="markIcon"></div>
+    <span class="brand-name">Wasili</span>
+    <span class="brand-role">Rider</span>
+  </div>
+  <div class="header-actions">
+    <span class="header-user" id="userLabel"></span>
+    <button class="icon-btn" id="logoutBtn"></button>
+  </div>
+</header>
+
+<main class="shell">
+  <div class="card delivery-row" style="margin-bottom: 22px;">
+    <div class="delivery-icon" id="capacityIcon"></div>
+    <div class="delivery-main">
+      <div class="delivery-item">Your status</div>
+      <div class="delivery-meta" id="capacityLine"></div>
+    </div>
+    <select class="field" id="statusToggle" style="width:auto; min-width:150px;">
+      <option value="AVAILABLE">Available</option>
+      <option value="OFFLINE">Offline</option>
+      <option value="UNAVAILABLE">Unavailable</option>
+    </select>
+  </div>
+
+  <h1 class="page-title">Your deliveries</h1>
+  <p class="page-sub">Everything currently assigned to you, in order of most recent activity.</p>
+  <div class="sync-note"><span class="sync-dot"></span> Live — new assignments appear automatically</div>
+  <div id="list"></div>
+</main>
+
+<div id="confirmModal" style="display:none; position:fixed; inset:0; background:rgba(20,33,28,0.45); align-items:center; justify-content:center; z-index:50;">
+  <div class="card" style="width:100%; max-width:360px;">
+    <h3 style="margin-top:0;">Confirm delivery</h3>
+    <p class="muted" style="font-size:13.5px;">Ask the customer for the code they were given when the order was placed.</p>
+    <div class="field"><label for="codeInput">Confirmation code</label><input id="codeInput" inputmode="numeric" placeholder="6-digit code" autocomplete="off" /></div>
+    <div id="confirmError" class="form-error" style="margin-top:10px;"></div>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn-secondary" id="cancelConfirm" style="flex:1;">Cancel</button>
+      <button class="btn-primary" id="submitConfirm" style="flex:1; justify-content:center;">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/appwrite@26.2.0"></script>
+<script src="/js/wasili-client.js"></script>
+<script src="/js/icons.js"></script>
+<script>
+  const session = Wasili.requireRole("rider");
+
+  document.getElementById("markIcon").innerHTML = icon("user", { size: 16 });
+  document.getElementById("logoutBtn").innerHTML = icon("logOut", { size: 15 }) + " Sign out";
+  document.getElementById("logoutBtn").addEventListener("click", () => Wasili.logout());
+  document.getElementById("userLabel").textContent = session.name;
+  document.getElementById("capacityIcon").innerHTML = icon("truck", { size: 19 });
+
+  let deliveries = [];
+  let riderRow = null;
+  let confirmTargetId = null;
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function renderCapacity() {
+    if (!riderRow) return;
+    document.getElementById("capacityLine").textContent = `${riderRow.vehicleType} · ${riderRow.activeDeliveries}/${riderRow.capacity} active`;
+    const toggle = document.getElementById("statusToggle");
+    // AT_CAPACITY is system-computed, not a choice - only offer it as the
+    // current value if that's what's active, otherwise stick to the two
+    // manual states (contract sec 6 distinguishes computed vs. set status).
+    if (riderRow.riderStatus === "AT_CAPACITY") {
+      if (!toggle.querySelector('option[value="AT_CAPACITY"]')) {
+        const opt = document.createElement("option");
+        opt.value = "AT_CAPACITY";
+        opt.textContent = "At capacity";
+        opt.disabled = true;
+        toggle.appendChild(opt);
+      }
+    }
+    toggle.value = riderRow.riderStatus;
+  }
+
+  document.getElementById("statusToggle").addEventListener("change", async (e) => {
+    const value = e.target.value;
+    if (value === "AT_CAPACITY") return; // not user-selectable
+    try {
+      riderRow = await Wasili.updateOwnRiderStatus(session.id, value);
+      renderCapacity();
+    } catch (err) {
+      alert(err.message);
+      renderCapacity();
+    }
+  });
+
+  function actionsFor(d) {
+    if (d.deliveryStatus === "ASSIGNED") {
+      return `
+        <button class="btn-secondary" onclick="reject('${d.$id}', this)">Reject</button>
+        <button class="btn-primary" onclick="accept('${d.$id}', this)">Accept</button>`;
+    }
+    if (d.deliveryStatus === "ACCEPTED") return `<button class="btn-secondary" onclick="advance('${d.$id}', 'PICKED_UP', this)">Mark Picked Up</button>`;
+    if (d.deliveryStatus === "PICKED_UP") return `<button class="btn-secondary" onclick="advance('${d.$id}', 'OUT_FOR_DELIVERY', this)">Mark Out for Delivery</button>`;
+    if (d.deliveryStatus === "OUT_FOR_DELIVERY") return `<button class="btn-primary" onclick="openConfirm('${d.$id}')">${icon("scan", { size: 15 })} Confirm delivery</button>`;
+    return "";
+  }
+
+  function render() {
+    const list = document.getElementById("list");
+    const active = deliveries.filter((d) => !["DELIVERED", "CANCELLED"].includes(d.deliveryStatus));
+    if (!active.length) {
+      list.innerHTML = `<div class="card empty-state"><div class="icon">${icon("truck", { size: 30 })}</div><div class="title">Nothing assigned right now</div><div class="hint">New deliveries from dispatch will show up here.</div></div>`;
+      return;
+    }
+    list.innerHTML = active
+      .map(
+        (d) => `
+      <div class="card">
+        <div class="delivery-row" style="margin-bottom:10px;">
+          <div class="delivery-icon">${icon("package", { size: 19 })}</div>
+          <div class="delivery-main">
+            <div class="delivery-item">${escapeHtml(d.itemDescription)}</div>
+            <div class="delivery-meta"><span>${icon("user", { size: 12 })} ${escapeHtml(d.customerName)}</span></div>
+            <div class="delivery-meta">
+              <span>${icon("mapPin", { size: 12 })} ${escapeHtml(d.address)}</span>
+              <span class="sep">&middot;</span>
+              <span>${icon("phone", { size: 12 })} ${escapeHtml(d.customerPhone)}</span>
+            </div>
+          </div>
+          <span class="badge badge-${d.deliveryStatus}">${d.deliveryStatus.replace(/_/g, " ")}</span>
+        </div>
+        <div style="text-align:right; display:flex; justify-content:flex-end; gap:8px;">${actionsFor(d)}</div>
+      </div>`
+      )
+      .join("");
+  }
+
+  async function accept(id, btn) {
+    btn.disabled = true;
+    try {
+      applyUpdate(await Wasili.acceptAssignment(id));
+    } catch (err) {
+      alert(err.message);
+      btn.disabled = false;
+    }
+  }
+  window.accept = accept;
+
+  async function reject(id, btn) {
+    const reason = prompt("Optional: why are you rejecting this?") || undefined;
+    btn.disabled = true;
+    try {
+      applyUpdate(await Wasili.rejectAssignment(id, reason));
+      await refreshRiderRow();
+    } catch (err) {
+      alert(err.message);
+      btn.disabled = false;
+    }
+  }
+  window.reject = reject;
+
+  async function advance(id, status, btn) {
+    btn.disabled = true;
+    try {
+      applyUpdate(await Wasili.advanceStatus(id, status));
+    } catch (err) {
+      alert(err.message);
+      btn.disabled = false;
+    }
+  }
+  window.advance = advance;
+
+  function openConfirm(id) {
+    confirmTargetId = id;
+    document.getElementById("codeInput").value = "";
+    document.getElementById("confirmError").classList.remove("visible");
+    document.getElementById("confirmModal").style.display = "flex";
+    document.getElementById("codeInput").focus();
+  }
+  window.openConfirm = openConfirm;
+
+  function closeConfirm() {
+    document.getElementById("confirmModal").style.display = "none";
+    confirmTargetId = null;
+  }
+  document.getElementById("cancelConfirm").addEventListener("click", closeConfirm);
+
+  document.getElementById("submitConfirm").addEventListener("click", async () => {
+    const code = document.getElementById("codeInput").value.trim();
+    const errorEl = document.getElementById("confirmError");
+    errorEl.classList.remove("visible");
+    if (!code) {
+      errorEl.textContent = "Enter the code the customer gives you.";
+      errorEl.classList.add("visible");
+      return;
+    }
+    try {
+      applyUpdate(await Wasili.confirmDelivery(confirmTargetId, code));
+      await refreshRiderRow();
+      closeConfirm();
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.classList.add("visible");
+    }
+  });
+
+  function applyUpdate(updated) {
+    const idx = deliveries.findIndex((d) => d.$id === updated.$id);
+    if (updated.riderId !== session.id && idx !== -1) {
+      deliveries.splice(idx, 1); // rejected - no longer ours
+    } else if (idx !== -1) {
+      deliveries[idx] = updated;
+    } else {
+      deliveries.unshift(updated);
+    }
+    render();
+  }
+
+  async function refreshRiderRow() {
+    const rows = await Wasili.listRiders();
+    riderRow = rows.find((r) => r.$id === session.id) || riderRow;
+    renderCapacity();
+  }
+
+  async function loadAll() {
+    const [mine, riders] = await Promise.all([
+      Wasili.listDeliveries([Wasili.Query.equal("riderId", [session.id])]),
+      Wasili.listRiders(),
+    ]);
+    deliveries = mine;
+    riderRow = riders.find((r) => r.$id === session.id) || null;
+    render();
+    renderCapacity();
+  }
+
+  loadAll();
+
+  Wasili.onDeliveryChange((updated) => {
+    if (updated.riderId === session.id || deliveries.some((d) => d.$id === updated.$id)) applyUpdate(updated);
+  });
+  Wasili.onRiderChange((updated) => {
+    if (updated.$id === session.id) {
+      riderRow = updated;
+      renderCapacity();
+    }
+  });
+</script>
+</body>
+</html>
