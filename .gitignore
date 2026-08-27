@@ -1,5 +1,14 @@
-node_modules/
+# Secrets - never commit real endpoint/project/API key values.
+# Use .env.example as the template; keep your real .env local only.
 .env
-*.log
-.DS_Store
+.env.local
+.env.*.local
+
+node_modules/
+npm-debug.log*
+
+# Appwrite CLI local state
 .appwrite/
+
+.DS_Store
+Thumbs.db

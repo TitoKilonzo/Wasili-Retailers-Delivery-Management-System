@@ -66,7 +66,7 @@ async function verifyConnection() {
      Rows/Documents, and Users. If in doubt, regenerate the key with every
      read/write box under those checked and paste the new value into .env.
 `);
-    process.exit(1);
+    throw new Error("__handled__");
   }
 }
 
@@ -98,7 +98,35 @@ async function ignoreExists(promise, label) {
 }
 
 async function setupDatabase() {
-  await ignoreExists(databases.create({ databaseId: DATABASE_ID, name: "Wasili" }), "database reflex");
+  try {
+    await databases.create({ databaseId: DATABASE_ID, name: "Wasili" });
+    console.log(`created  database ${DATABASE_ID}`);
+  } catch (err) {
+    if (err.code === 409) {
+      console.log(`exists   database ${DATABASE_ID}`);
+    } else if (err.type === "additional_resource_not_allowed") {
+      console.error(`\nCan't create database "${DATABASE_ID}" - your Appwrite plan has hit its database limit.\n`);
+      console.error(explain(err));
+      console.error(`
+This cap is shared across your whole organization on the Free plan, not
+just this project - so it's usually an old/unused database from a
+different project eating the slot. Pick one:
+
+  1. Reuse a database you already have: Console > Databases > copy the
+     ID of one that's empty or you don't need > set APPWRITE_DATABASE_ID
+     in .env to that ID > re-run.
+  2. Free a slot: Console > (any project) > Databases > delete an unused
+     one > re-run.
+  3. Upgrade the organization to Pro (appwrite.io/pricing, ~$15/mo) for
+     unlimited databases.
+`);
+      throw new Error("__handled__");
+    } else {
+      console.error(`\nFailed on: database ${DATABASE_ID}`);
+      console.error(explain(err));
+      throw err;
+    }
+  }
 
   // --- riders: capacity + vehicle + operational status, per contract sec 6-7 ---
   await ignoreExists(
@@ -115,9 +143,9 @@ async function setupDatabase() {
   await ignoreExists(tablesDB.createStringColumn({ databaseId: DATABASE_ID, tableId: RIDERS_TABLE, key: "phone", size: 20, required: true }), "riders.phone");
   await ignoreExists(tablesDB.createEnumColumn({ databaseId: DATABASE_ID, tableId: RIDERS_TABLE, key: "vehicleType", elements: VEHICLE_TYPES, required: true }), "riders.vehicleType");
   await ignoreExists(tablesDB.createIntegerColumn({ databaseId: DATABASE_ID, tableId: RIDERS_TABLE, key: "capacity", required: true, min: 1, max: 50 }), "riders.capacity");
-  await ignoreExists(tablesDB.createIntegerColumn({ databaseId: DATABASE_ID, tableId: RIDERS_TABLE, key: "activeDeliveries", required: true, min: 0, max: 50, xdefault: 0 }), "riders.activeDeliveries");
+  await ignoreExists(tablesDB.createIntegerColumn({ databaseId: DATABASE_ID, tableId: RIDERS_TABLE, key: "activeDeliveries", required: true, min: 0, max: 50 }), "riders.activeDeliveries");
   await ignoreExists(
-    tablesDB.createEnumColumn({ databaseId: DATABASE_ID, tableId: RIDERS_TABLE, key: "riderStatus", elements: RIDER_STATUS, required: true, xdefault: "AVAILABLE" }),
+    tablesDB.createEnumColumn({ databaseId: DATABASE_ID, tableId: RIDERS_TABLE, key: "riderStatus", elements: RIDER_STATUS, required: true }),
     "riders.riderStatus"
   );
 
@@ -152,7 +180,7 @@ async function setupDatabase() {
     "deliveries.requiredVehicleType"
   );
   await ignoreExists(
-    tablesDB.createEnumColumn({ databaseId: DATABASE_ID, tableId: DELIVERIES_TABLE, key: "deliveryStatus", elements: DELIVERY_STATUS, required: true, xdefault: "OPEN" }),
+    tablesDB.createEnumColumn({ databaseId: DATABASE_ID, tableId: DELIVERIES_TABLE, key: "deliveryStatus", elements: DELIVERY_STATUS, required: true }),
     "deliveries.deliveryStatus"
   );
 
@@ -229,7 +257,16 @@ async function seedUsers() {
   await setupDatabase();
   await seedUsers();
 })().catch((err) => {
-  // verifyConnection/ignoreExists/seedUsers already printed the specific
-  // reason above via explain(err) - this is just the final non-zero exit.
-  process.exit(1);
+  // verifyConnection/setupDatabase/ignoreExists/seedUsers already printed
+  // the specific reason above via explain(err) for anything expected -
+  // this only prints something new for a truly unexpected crash.
+  if (err.message !== "__handled__") {
+    console.error("\nUnexpected failure:");
+    console.error(explain(err));
+  }
+  // process.exitCode (not process.exit()) lets Node close pending network
+  // handles on its own before exiting - calling process.exit() here while
+  // the HTTP client still has sockets closing is what causes the
+  // "Assertion failed ... UV_HANDLE_CLOSING" crash on Windows.
+  process.exitCode = 1;
 });

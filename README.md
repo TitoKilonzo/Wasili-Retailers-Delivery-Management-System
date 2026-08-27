@@ -62,8 +62,11 @@ npm install
 cp .env.example .env
 ```
 
-Fill in `.env` (endpoint, project ID, an API key with `databases.read`,
-`databases.write`, `users.read`, `users.write`), then:
+Fill in `.env` (endpoint, project ID, an API key with read+write on
+Databases/Tables, Columns/Attributes, Rows/Documents, and Users - Console
+may label these with the old or new names depending on your project's
+version, tick both sets if you see both). `.env` is gitignored - never
+commit it; `.env.example` is the template that's safe to commit. Then:
 
 ```
 node scripts/setup.js
@@ -72,7 +75,15 @@ node scripts/setup.js
 Creates the `wasili` database, its three tables, and five seed accounts -
 one RetailerStaff, one Dispatcher, three Riders with **different** vehicles
 and capacities on purpose, so the compatibility/capacity rules are actually
-demonstrable. Prints username/password pairs. Safe to re-run.
+demonstrable. Prints username/password pairs to your terminal only - share
+those with your team directly, don't paste them into a committed file.
+Safe to re-run.
+
+If setup fails with `additional_resource_not_allowed` on the database
+step, your Appwrite plan is at its database limit (shared across your
+whole organization on the Free plan) - reuse an existing database ID via
+`APPWRITE_DATABASE_ID` in `.env`, delete an unused one in Console, or
+upgrade to Pro.
 
 Deploy the Functions:
 
