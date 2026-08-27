@@ -30,6 +30,46 @@ const databases = new Databases(client);
 const tablesDB = new TablesDB(client);
 const users = new Users(client);
 
+// Turns an Appwrite error into one clear line instead of a generic
+// "Setup failed: <message>" - the actual cause (wrong scope, wrong
+// project, wrong region, expired key) is always in code/type, and
+// err.message alone often hides it.
+function explain(err) {
+  const bits = [`message: ${err.message}`];
+  if (err.code) bits.push(`http: ${err.code}`);
+  if (err.type) bits.push(`type: ${err.type}`);
+  return bits.join("  |  ");
+}
+
+// Fails fast with a specific reason instead of dying partway through
+// table creation with a confusing 401. A missing scope is the single
+// most common cause of "seeding is failing" here: Appwrite's Console
+// now shows both the old category names (Databases, Collections,
+// Documents, Attributes) and the new ones (Tables, Rows, Columns) for
+// the same underlying permissions depending on your project's version -
+// tick every read/write box under whichever set of names you see for
+// Databases/Tables/Collections, Columns/Attributes, and Rows/Documents,
+// plus Users.
+async function verifyConnection() {
+  try {
+    await users.list({ queries: [] });
+  } catch (err) {
+    console.error("\nCould not reach Appwrite with this API key.\n");
+    console.error(explain(err));
+    console.error(`\nCheck, in order:
+  1. APPWRITE_ENDPOINT in .env matches your project's actual region
+     (Console > Project Settings > API Endpoint) - e.g. a project
+     created in Frankfurt will 404/reject calls made to a US endpoint.
+  2. APPWRITE_PROJECT_ID in .env matches Console > Project Settings > Project ID.
+  3. The API key (Console > Overview > Integrate > API Keys) has NOT expired,
+     and has read+write ticked for: Databases/Tables, Columns/Attributes,
+     Rows/Documents, and Users. If in doubt, regenerate the key with every
+     read/write box under those checked and paste the new value into .env.
+`);
+    process.exit(1);
+  }
+}
+
 // Falls back to the contract's own names if .env doesn't set these -
 // functions/*/src/main.js hardcode these same defaults (Appwrite Functions
 // run in their own managed environment and can't read this local .env), so
@@ -49,7 +89,11 @@ async function ignoreExists(promise, label) {
     console.log(`created  ${label}`);
   } catch (err) {
     if (err.code === 409) console.log(`exists   ${label}`);
-    else throw err;
+    else {
+      console.error(`\nFailed on: ${label}`);
+      console.error(explain(err));
+      throw err;
+    }
   }
 }
 
@@ -154,6 +198,8 @@ async function seedUsers() {
         console.log(`exists   ${acc.role.padEnd(12)} ${acc.username}`);
         continue;
       }
+      console.error(`\nFailed creating account: ${acc.username}`);
+      console.error(explain(err));
       throw err;
     }
 
@@ -179,9 +225,11 @@ async function seedUsers() {
 }
 
 (async () => {
+  await verifyConnection();
   await setupDatabase();
   await seedUsers();
 })().catch((err) => {
-  console.error("Setup failed:", err.message);
+  // verifyConnection/ignoreExists/seedUsers already printed the specific
+  // reason above via explain(err) - this is just the final non-zero exit.
   process.exit(1);
 });
