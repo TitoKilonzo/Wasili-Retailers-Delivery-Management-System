@@ -1,6 +1,11 @@
-// ========================================
-// MOCK DELIVERY DATA
-// ========================================
+// ============================================================================
+// TEMPORARY IN-MEMORY MOCK DELIVERY DATA
+// ============================================================================
+// Note: This in-memory mock data is used for frontend UI presentation and prototyping.
+// Data modifications are local to the browser session and will reset on page refresh.
+// Full backend persistence is managed via Appwrite Functions (create-delivery,
+// cancel-delivery) and TablesDB via public/js/wasili-client.js in the integration phase.
+// ============================================================================
 
 let deliveries = [
     {
@@ -628,6 +633,97 @@ function renderDeliveryStatuses() {
 
 
 // ========================================
+// DATA NORMALIZATION & FORMATTING HELPERS
+// ========================================
+
+function formatKenyanPhone(phone) {
+    let cleaned = (phone || "").replace(/[\s\-\(\)]/g, "");
+    if (cleaned.startsWith("+254")) {
+        cleaned = "0" + cleaned.slice(4);
+    } else if (cleaned.startsWith("254")) {
+        cleaned = "0" + cleaned.slice(3);
+    }
+    return cleaned;
+}
+
+function formatVehicle(vehicle) {
+    if (!vehicle) return "Motorcycle";
+    const v = vehicle.toUpperCase();
+    const map = {
+        BICYCLE: "Bicycle",
+        MOTORCYCLE: "Motorcycle",
+        CAR: "Car",
+        VAN: "Van",
+        TRUCK: "Truck"
+    };
+    return map[v] || vehicle;
+}
+
+function mapRowToDelivery(row, ridersMap = {}) {
+    const rider = (row.riderId && ridersMap[row.riderId]) ? {
+        name: ridersMap[row.riderId].name,
+        phone: ridersMap[row.riderId].phone,
+        vehicle: formatVehicle(ridersMap[row.riderId].vehicleType)
+    } : null;
+
+    return {
+        id: row.$id || row.id,
+        customerName: row.customerName,
+        phone: row.customerPhone || row.phone,
+        destination: row.address || row.destination,
+        landmark: row.landmark || "",
+        itemDescription: row.itemDescription,
+        vehicle: formatVehicle(row.requiredVehicleType || row.vehicle),
+        rawVehicle: row.requiredVehicleType || row.vehicle,
+        notes: row.notes || "",
+        status: row.deliveryStatus || row.status,
+        rider: rider,
+        riderId: row.riderId,
+        confirmationCode: row.confirmationCode
+    };
+}
+
+// ========================================
+// BACKEND API INTEGRATION (WASILI CLIENT)
+// ========================================
+
+async function syncWithBackend() {
+    if (typeof Wasili !== "undefined" && typeof Wasili.listDeliveries === "function") {
+        try {
+            const [rows, riders] = await Promise.all([
+                Wasili.listDeliveries().catch(() => null),
+                typeof Wasili.listRiders === "function" ? Wasili.listRiders().catch(() => []) : Promise.resolve([])
+            ]);
+
+            if (rows && Array.isArray(rows) && rows.length > 0) {
+                const ridersMap = {};
+                (riders || []).forEach(r => {
+                    if (r && r.$id) ridersMap[r.$id] = r;
+                });
+                deliveries = rows.map(r => mapRowToDelivery(r, ridersMap));
+                renderAll();
+            }
+        } catch (err) {
+            console.warn("Backend sync notice:", err);
+        }
+    }
+}
+
+function updateStaffProfile() {
+    if (typeof Wasili !== "undefined" && typeof Wasili.getSession === "function") {
+        const session = Wasili.getSession();
+        if (session && session.name) {
+            const staffNameEl = document.querySelector(".staff-info strong");
+            const staffAvatarEl = document.querySelector(".staff-avatar");
+            if (staffNameEl) staffNameEl.textContent = session.name;
+            if (staffAvatarEl) {
+                staffAvatarEl.textContent = session.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+            }
+        }
+    }
+}
+
+// ========================================
 // CANCEL DELIVERY
 // ========================================
 
@@ -641,7 +737,7 @@ function addCancelListeners() {
 
     cancelButtons.forEach(button => {
 
-        button.addEventListener("click", () => {
+        button.addEventListener("click", async () => {
 
             const deliveryId =
                 button.dataset.id;
@@ -665,7 +761,19 @@ function addCancelListeners() {
 
             if (!confirmed) return;
 
+            // Connect to Wasili backend cancel-delivery function if available
+            if (typeof Wasili !== "undefined" && typeof Wasili.cancelDelivery === "function") {
+                try {
+                    await Wasili.cancelDelivery(deliveryId, "Cancelled by RetailerStaff");
+                    await syncWithBackend();
+                    showSuccessMessage(`${deliveryId} has been cancelled.`);
+                    return;
+                } catch (err) {
+                    console.warn("Backend cancellation failed, applying local update:", err.message);
+                }
+            }
 
+            // Fallback for local testing / offline state
             delivery.status =
                 "CANCELLED";
 
@@ -689,7 +797,7 @@ function addCancelListeners() {
 
 document
     .getElementById("deliveryForm")
-    .addEventListener("submit", function (event) {
+    .addEventListener("submit", async function (event) {
 
         event.preventDefault();
 
@@ -741,7 +849,36 @@ document
                 .value
                 .trim();
 
+        const cleanPhone = formatKenyanPhone(phone);
+        const requiredVehicleType = vehicle.toUpperCase();
 
+        // Connect to Wasili backend create-delivery function if available
+        if (typeof Wasili !== "undefined" && typeof Wasili.createDelivery === "function") {
+            try {
+                const payload = {
+                    customerName,
+                    customerPhone: cleanPhone,
+                    address: destination + (landmark ? ` (Landmark: ${landmark})` : ""),
+                    itemDescription: itemDescription + (notes ? ` [Notes: ${notes}]` : ""),
+                    requiredVehicleType
+                };
+
+                const res = await Wasili.createDelivery(payload);
+                await syncWithBackend();
+
+                this.reset();
+                showSection("dashboard");
+
+                const id = res?.$id || res?.id || "Delivery request";
+                const codeMsg = res?.confirmationCode ? ` Confirmation code: ${res.confirmationCode}.` : "";
+                showSuccessMessage(`${id} created successfully and waiting for rider assignment.${codeMsg}`);
+                return;
+            } catch (err) {
+                console.warn("Backend create failed, creating local request:", err.message);
+            }
+        }
+
+        // Fallback for local testing / offline state
         const nextNumber =
             deliveries.length + 1;
 
@@ -850,7 +987,20 @@ function renderAll() {
 
 
 // ========================================
-// INITIAL RENDER
+// INITIAL RENDER & BACKEND INITIALIZATION
 // ========================================
 
 renderAll();
+updateStaffProfile();
+syncWithBackend();
+
+// Realtime subscription for live delivery updates
+if (typeof Wasili !== "undefined" && typeof Wasili.onDeliveryChange === "function") {
+    try {
+        Wasili.onDeliveryChange(() => {
+            syncWithBackend();
+        });
+    } catch (err) {
+        console.warn("Realtime listener not available:", err);
+    }
+}
