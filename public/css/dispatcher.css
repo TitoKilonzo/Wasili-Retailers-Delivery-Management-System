@@ -1,0 +1,372 @@
+/* =========================================================
+   WASILI DISPATCHER PORTAL
+   Dispatcher-specific styles
+   Shared styles come from css/style.css
+   ========================================================= */
+
+
+/* =========================================================
+   TOPBAR
+   ========================================================= */
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.menu-toggle {
+    display: none;
+    border: 1px solid var(--gray-300);
+    background: var(--white);
+    color: var(--gray-700);
+    border-radius: var(--radius-sm);
+    min-width: 42px;
+    min-height: 42px;
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+
+
+/* =========================================================
+   PAGE HEADINGS
+   ========================================================= */
+
+.page-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.page-heading h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--gray-900);
+}
+
+.page-heading p {
+    margin: var(--space-2) 0 0;
+    color: var(--gray-500);
+}
+
+
+/* =========================================================
+   STATISTICS
+   ========================================================= */
+
+.stat-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.stat-icon {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--green-50);
+    color: var(--green-600);
+    font-weight: 700;
+}
+
+.stat-description {
+    display: block;
+    margin-top: var(--space-2);
+    color: var(--gray-500);
+    font-size: 0.8rem;
+}
+
+
+/* =========================================================
+   DISPATCHER CARDS
+   ========================================================= */
+
+.dispatcher-card {
+    margin-top: var(--space-6);
+}
+
+.card-subtitle {
+    margin: var(--space-1) 0 0;
+    color: var(--gray-500);
+    font-size: 0.875rem;
+}
+
+
+/* =========================================================
+   TABLE ACTIONS
+   ========================================================= */
+
+.table-action {
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 0.8rem;
+}
+
+.table-muted {
+    color: var(--gray-500);
+    font-size: 0.875rem;
+}
+
+
+/* =========================================================
+   RIDER STATUS
+   ========================================================= */
+
+.rider-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.rider-status::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gray-400);
+}
+
+.rider-status.available::before {
+    background: var(--success);
+}
+
+.rider-status.at-capacity::before {
+    background: var(--warning);
+}
+
+.rider-status.offline::before {
+    background: var(--gray-400);
+}
+
+.rider-status.unavailable::before {
+    background: var(--danger);
+}
+
+
+/* =========================================================
+   DELIVERY REQUEST CARDS
+   ========================================================= */
+
+.delivery-request-list,
+.rider-list,
+.assignment-list {
+    display: grid;
+    gap: var(--space-4);
+}
+
+.delivery-request-card,
+.rider-card,
+.assignment-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+}
+
+.delivery-request-header,
+.rider-card-header,
+.assignment-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.delivery-request-header h3,
+.rider-card-header h3,
+.assignment-card-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--gray-900);
+}
+
+.delivery-request-meta,
+.rider-meta,
+.assignment-meta {
+    margin-top: var(--space-2);
+    color: var(--gray-500);
+    font-size: 0.875rem;
+}
+
+
+/* =========================================================
+   DETAIL GRID
+   ========================================================= */
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+    margin-top: var(--space-5);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--gray-200);
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-label {
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.detail-value {
+    color: var(--gray-900);
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   CAPACITY
+   ========================================================= */
+
+.capacity-bar {
+    height: 8px;
+    margin-top: var(--space-2);
+    overflow: hidden;
+    background: var(--gray-100);
+    border-radius: 999px;
+}
+
+.capacity-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--green-500);
+    transition: width var(--transition);
+}
+
+.capacity-full .capacity-fill {
+    background: var(--danger);
+}
+
+
+/* =========================================================
+   ASSIGNMENT ACTIONS
+   ========================================================= */
+
+.card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-5);
+}
+
+.btn-reassign {
+    background: var(--white);
+    color: var(--warning);
+    border: 1px solid var(--warning);
+}
+
+.btn-reassign:hover {
+    background: var(--warning-bg);
+}
+
+
+/* =========================================================
+   ASSIGNMENT / REQUEST ACTION BUTTONS
+   ========================================================= */
+
+.btn-assign {
+    background: var(--green-600);
+    color: var(--white);
+    border: 1px solid var(--green-600);
+}
+
+.btn-assign:hover {
+    background: var(--green-700);
+}
+
+.btn-assign:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   COMPATIBILITY INDICATORS
+   ========================================================= */
+
+.compatible {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.incompatible {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   CAPACITY TEXT
+   ========================================================= */
+
+.capacity-text {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    color: var(--gray-600);
+    font-size: 0.8rem;
+}
+
+
+/* =========================================================
+   EMPTY STATES
+   ========================================================= */
+
+.dispatcher-empty {
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--gray-500);
+    border: 1px dashed var(--gray-300);
+    border-radius: var(--radius-md);
+    background: var(--white);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1024px) {
+    .detail-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .page-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .delivery-request-header,
+    .rider-card-header,
+    .assignment-card-header {
+        flex-direction: column;
+    }
+}

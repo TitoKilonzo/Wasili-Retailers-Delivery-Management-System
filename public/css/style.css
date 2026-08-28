@@ -355,3 +355,15 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================================================
+   PORTAL SECTION VISIBILITY
+   ========================================================= */
+
+.portal-section {
+    display: none;
+}
+
+.portal-section.active-section {
+    display: block;
+}
