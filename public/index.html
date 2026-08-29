@@ -50,9 +50,19 @@
             <form class="login-form" id="loginForm">
 
                 <div class="form-group">
+                    <label for="role">Sign in as</label>
+                    <select id="role" name="role" required autofocus>
+                        <option value="" disabled selected>Select your role</option>
+                        <option value="retailerstaff">RetailerStaff</option>
+                        <option value="dispatcher">Dispatcher</option>
+                        <option value="rider">Rider</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" name="username" placeholder="e.g. jane" autocomplete="username"
-                        required autofocus>
+                        required>
                 </div>
 
                 <div class="form-group">
@@ -66,8 +76,6 @@
                 </button>
 
             </form>
-
-            <div class="login-roles" id="loginRoles"></div>
 
             <p class="login-footer">
                 No account? Ask your dispatcher - RetailerStaff, Dispatcher, and Rider

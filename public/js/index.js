@@ -8,25 +8,11 @@ const ROLE_REDIRECT = {
     rider: "rider.html",
 };
 
-const ROLE_ICON = {
-    retailerstaff: "user",
-    dispatcher: "inbox",
-    rider: "truck",
-};
-
 const loginForm = document.getElementById("loginForm");
 const loginButton = document.getElementById("loginButton");
 const loginError = document.getElementById("loginError");
 const loginInfo = document.getElementById("loginInfo");
-
-document.getElementById("loginRoles").innerHTML = Object.keys(ROLE_REDIRECT)
-    .map((role) => `
-        <div class="login-role">
-            ${icon(ROLE_ICON[role], { size: 20 })}
-            <span>${Wasili.ROLE_DISPLAY[role]}</span>
-        </div>
-    `)
-    .join("");
+const roleSelect = document.getElementById("role");
 
 function showError(message) {
     loginInfo.classList.remove("show");
@@ -54,9 +40,14 @@ if (existingSession && ROLE_REDIRECT[existingSession.role]) {
 loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
+    const selectedRole = roleSelect.value;
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value;
 
+    if (!selectedRole) {
+        showError("Select your role.");
+        return;
+    }
     if (!username || !password) {
         showError("Enter both a username and a password.");
         return;
@@ -69,6 +60,21 @@ loginForm.addEventListener("submit", async (event) => {
 
     try {
         const session = await Wasili.login(username, password);
+
+        // The account's real role (from its Appwrite label) is the source of
+        // truth. If it doesn't match what the person picked, stop them here
+        // with a clear message instead of silently sending them to the
+        // portal they actually chose.
+        if (session.role !== selectedRole) {
+            await Wasili.logout({ redirect: false });
+            showError(
+                `This account is registered as ${Wasili.ROLE_DISPLAY[session.role]}, not ${Wasili.ROLE_DISPLAY[selectedRole]}. Select "${Wasili.ROLE_DISPLAY[session.role]}" and sign in again.`
+            );
+            loginButton.disabled = false;
+            loginButton.textContent = "Sign In";
+            return;
+        }
+
         redirectForRole(session.role);
     } catch (err) {
         showError(err.message || "Sign in failed. Check your username and password and try again.");
