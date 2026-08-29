@@ -1,6 +1,7 @@
 # Secrets - never commit real endpoint/project/API key values.
 # Use .env.example as the template; keep your real .env local only.
 .env
+.env.example
 .env.local
 .env.*.local
 

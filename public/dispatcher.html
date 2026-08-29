@@ -3,205 +3,476 @@
 <html lang="en">
 
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Wasili — Dispatcher</title>
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<link rel="stylesheet" href="/css/style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Wasili | Dispatcher Dashboard</title>
+
+    <!-- Shared Wasili Design System -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Dispatcher-specific styles -->
+    <link rel="stylesheet" href="css/dispatcher.css">
+
 </head>
 
 <body>
-<header class="app-header">
-  <div class="brand">
-    <div class="mark" id="markIcon"></div>
-    <span class="brand-name">Wasili</span>
-    <span class="brand-role">Dispatcher</span>
-  </div>
-  <div class="header-actions">
-    <span class="header-user" id="userLabel"></span>
-    <button class="icon-btn" id="logoutBtn"></button>
-  </div>
-</header>
 
-<main class="shell">
-  <h1 class="page-title">Dispatch board</h1>
-  <p class="page-sub">Assign open requests to a rider who's operational, under capacity, and has the right vehicle.</p>
+    <div class="app-shell">
 
-  <div class="section-label" id="ridersLabel"></div>
-  <div id="riders" class="stack" style="margin-bottom: 10px;"></div>
+        <!-- =========================
+         SIDEBAR
+    ========================== -->
 
-  <div class="section-label" id="openLabel"></div>
-  <div class="sync-note"><span class="sync-dot"></span> Live — new requests appear automatically</div>
-  <div id="open"></div>
+        <aside class="sidebar" id="sidebar">
 
-  <div class="section-label" id="activeLabel"></div>
-  <div id="active"></div>
-</main>
+            <div class="brand">
+                <img src="favicon.svg" alt="Wasili Logo" class="brand-logo" width="48" height="48">
 
-<script src="https://cdn.jsdelivr.net/npm/appwrite@26.2.0"></script>
-<script src="/js/wasili-client.js"></script>
-<script src="/js/icons.js"></script>
-<script>
-  const session = Wasili.requireRole("dispatcher");
+                <div>
+                    <h1>Wasili</h1>
+                    <span>Dispatcher Portal</span>
+                </div>
+            </div>
 
-  document.getElementById("markIcon").innerHTML = icon("truck", { size: 16 });
-  document.getElementById("logoutBtn").innerHTML = icon("logOut", { size: 15 }) + " Sign out";
-  document.getElementById("logoutBtn").addEventListener("click", () => Wasili.logout());
-  document.getElementById("userLabel").textContent = session.name;
-  document.getElementById("ridersLabel").innerHTML = icon("user", { size: 15 }) + " Riders";
-  document.getElementById("openLabel").innerHTML = icon("alertCircle", { size: 15 }) + " Open requests";
-  document.getElementById("activeLabel").innerHTML = icon("package", { size: 15 }) + " In progress";
 
-  const VEHICLE_TIER = ["BICYCLE", "MOTORCYCLE", "CAR", "VAN", "TRUCK"];
-  function vehicleCompatible(riderVehicle, requiredVehicle) {
-    return VEHICLE_TIER.indexOf(riderVehicle) >= VEHICLE_TIER.indexOf(requiredVehicle);
-  }
+            <nav class="sidebar-nav">
 
-  let deliveries = [];
-  let riders = [];
+                <button class="nav-link active" data-section="dashboard">
+                    
+                    <span>Dashboard</span>
+                </button>
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  }
 
-  function riderOptionsFor(requiredVehicleType, excludeRiderId) {
-    return riders
-      .filter((r) => r.$id !== excludeRiderId)
-      .filter((r) => r.riderStatus !== "OFFLINE" && r.riderStatus !== "UNAVAILABLE")
-      .filter((r) => r.activeDeliveries < r.capacity)
-      .filter((r) => vehicleCompatible(r.vehicleType, requiredVehicleType))
-      .map((r) => `<option value="${r.$id}">${escapeHtml(r.name)} — ${r.vehicleType} (${r.activeDeliveries}/${r.capacity})</option>`)
-      .join("");
-  }
+                <button class="nav-link" data-section="delivery-requests">
+                   
+                    <span>Delivery Requests</span>
+                </button>
 
-  async function assign(deliveryId, riderId, selectEl) {
-    if (!riderId) return;
-    selectEl.disabled = true;
-    try {
-      const updated = await Wasili.assignDelivery(deliveryId, riderId);
-      applyDeliveryUpdate(updated);
-      await refreshRiders();
-    } catch (err) {
-      alert(err.message);
-      selectEl.disabled = false;
-    }
-  }
-  window.assign = assign;
 
-  async function cancel(deliveryId, btn) {
-    if (!confirm("Cancel this delivery?")) return;
-    btn.disabled = true;
-    try {
-      const updated = await Wasili.cancelDelivery(deliveryId);
-      applyDeliveryUpdate(updated);
-      await refreshRiders();
-    } catch (err) {
-      alert(err.message);
-      btn.disabled = false;
-    }
-  }
-  window.cancel = cancel;
+                <button class="nav-link" data-section="riders">
+                   
+                    <span>Riders</span>
+                </button>
 
-  function applyDeliveryUpdate(updated) {
-    const idx = deliveries.findIndex((d) => d.$id === updated.$id);
-    if (idx !== -1) deliveries[idx] = updated;
-    else deliveries.unshift(updated);
-    render();
-  }
 
-  async function refreshRiders() {
-    riders = await Wasili.listRiders();
-    render();
-  }
+                <button class="nav-link" data-section="assignments">
+                   
+                    <span>Assignments</span>
+                </button>
 
-  function renderRiders() {
-    const el = document.getElementById("riders");
-    el.innerHTML = riders
-      .map(
-        (r) => `
-      <div class="card delivery-row">
-        <div class="delivery-icon">${icon("truck", { size: 19 })}</div>
-        <div class="delivery-main">
-          <div class="delivery-item">${escapeHtml(r.name)}</div>
-          <div class="delivery-meta">
-            <span>${r.vehicleType}</span>
-            <span class="sep">&middot;</span>
-            <span>${r.activeDeliveries}/${r.capacity} active</span>
-          </div>
-        </div>
-        <span class="rider-status-pill rider-status-${r.riderStatus}">${r.riderStatus.replace(/_/g, " ")}</span>
-      </div>`
-      )
-      .join("");
-  }
+            </nav>
 
-  function render() {
-    renderRiders();
 
-    const open = deliveries.filter((d) => d.deliveryStatus === "OPEN");
-    const active = deliveries.filter((d) => !["OPEN", "DELIVERED", "CANCELLED"].includes(d.deliveryStatus));
+            <div class="sidebar-footer">
 
-    const openEl = document.getElementById("open");
-    openEl.innerHTML = open.length
-      ? open
-          .map((d) => {
-            const options = riderOptionsFor(d.requiredVehicleType, null);
-            return `
-      <div class="card delivery-row">
-        <div class="delivery-icon">${icon("package", { size: 19 })}</div>
-        <div class="delivery-main">
-          <div class="delivery-item">${escapeHtml(d.itemDescription)} <span class="muted" style="font-weight:400; font-size:12px;">(${d.requiredVehicleType})</span></div>
-          <div class="delivery-meta"><span>${escapeHtml(d.customerName)}</span><span class="sep">&middot;</span><span>${escapeHtml(d.address)}</span></div>
-        </div>
-        <select class="field" style="width:auto; min-width:190px;" onchange="assign('${d.$id}', this.value, this)" ${options ? "" : "disabled"}>
-          <option value="">${options ? "Assign rider…" : "No eligible rider"}</option>
-          ${options}
-        </select>
-      </div>`;
-          })
-          .join("")
-      : `<div class="card empty-state"><div class="icon">${icon("checkCircle", { size: 30 })}</div><div class="title">All caught up</div><div class="hint">No open requests waiting on a rider.</div></div>`;
+                <div class="staff-info">
 
-    const activeEl = document.getElementById("active");
-    activeEl.innerHTML = active.length
-      ? active
-          .map((d) => {
-            const rider = riders.find((r) => r.$id === d.riderId);
-            const canReassign = d.deliveryStatus === "ASSIGNED" || d.deliveryStatus === "ACCEPTED";
-            const reassignOptions = canReassign ? riderOptionsFor(d.requiredVehicleType, d.riderId) : "";
-            return `
-      <div class="card delivery-row">
-        <div class="delivery-icon">${icon("package", { size: 19 })}</div>
-        <div class="delivery-main">
-          <div class="delivery-item">${escapeHtml(d.itemDescription)}</div>
-          <div class="delivery-meta">
-            <span>${escapeHtml(d.customerName)}</span>
-            ${rider ? `<span class="sep">&middot;</span><span>${icon("user", { size: 12 })} ${escapeHtml(rider.name)}</span>` : ""}
-          </div>
-        </div>
-        ${canReassign ? `<select class="field" style="width:auto; min-width:170px;" onchange="assign('${d.$id}', this.value, this)"><option value="">Reassign…</option>${reassignOptions}</select>` : ""}
-        <button class="btn-secondary" onclick="cancel('${d.$id}', this)">Cancel</button>
-        <span class="badge badge-${d.deliveryStatus}">${d.deliveryStatus.replace(/_/g, " ")}</span>
-      </div>`;
-          })
-          .join("")
-      : `<div class="card empty-state"><div class="hint">Nothing in progress right now.</div></div>`;
-  }
+                    <div class="staff-avatar" id="dispatcherAvatar">
+                        DS
+                    </div>
 
-  async function loadAll() {
-    [deliveries, riders] = await Promise.all([Wasili.listDeliveries(), Wasili.listRiders()]);
-    render();
-  }
+                    <div>
+                        <strong id="dispatcherName">
+                            Dispatcher
+                        </strong>
 
-  loadAll();
+                        <span>
+                            Wasili Operations
+                        </span>
+                    </div>
 
-  Wasili.onDeliveryChange((updated) => applyDeliveryUpdate(updated));
-  Wasili.onRiderChange((updated) => {
-    const idx = riders.findIndex((r) => r.$id === updated.$id);
-    if (idx !== -1) riders[idx] = updated;
-    render();
-  });
-</script>
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- =========================
+         MAIN AREA
+    ========================== -->
+
+        <main class="main-area">
+
+            <!-- TOP BAR -->
+
+            <header class="topbar">
+
+                <div class="topbar-left">
+
+                    <button class="menu-toggle" id="menuToggle" aria-label="Open navigation">
+                    
+                    </button>
+
+                    <div>
+                        <h2 id="pageTitle">
+                            Dashboard
+                        </h2>
+
+                        <p id="pageSubtitle">
+                            Manage delivery requests and rider assignments
+                        </p>
+                    </div>
+
+                </div>
+
+            </header>
+
+
+            <div class="page-content">
+
+
+                <!-- =========================
+                 DASHBOARD
+            ========================== -->
+
+                <section class="portal-section active-section" id="dashboard">
+
+                    <div class="page-heading">
+
+                        <div>
+
+                            <h2>
+                                Dispatch Overview
+                            </h2>
+
+                            <p>
+                                Review delivery requests, rider availability,
+                                and current assignments.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- STATISTICS -->
+
+                    <div class="stats-grid">
+
+                        <div class="stat-card">
+
+                            <div class="stat-top">
+
+                                <span class="stat-label">
+                                    Open Deliveries
+                                </span>
+
+                        
+
+                            </div>
+
+                            <div class="stat-value" id="openDeliveries">
+                                0
+                            </div>
+
+                            <span class="stat-description">
+                                Waiting for rider assignment
+                            </span>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <div class="stat-top">
+
+                                <span class="stat-label">
+                                    Assigned
+                                </span>
+
+                               
+                            </div>
+
+                            <div class="stat-value" id="assignedDeliveries">
+                                0
+                            </div>
+
+                            <span class="stat-description">
+                                Currently assigned to riders
+                            </span>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <div class="stat-top">
+
+                                <span class="stat-label">
+                                    Available Riders
+                                </span>
+
+                              
+
+                            </div>
+
+                            <div class="stat-value" id="availableRiders">
+                                0
+                            </div>
+
+                            <span class="stat-description">
+                                Riders available for assignment
+                            </span>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <div class="stat-top">
+
+                                <span class="stat-label">
+                                    At Capacity
+                                </span>
+
+                                <span class="stat-icon">
+                                    !
+                                </span>
+
+                            </div>
+
+                            <div class="stat-value" id="ridersAtCapacity">
+                                0
+                            </div>
+
+                            <span class="stat-description">
+                                Riders with no remaining capacity
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- OPEN REQUESTS -->
+
+                    <div class="card dispatcher-card">
+
+                        <div class="card-header">
+
+                            <div>
+
+                                <h3 class="card-title">
+                                    New Delivery Requests
+                                </h3>
+
+                                <p class="card-subtitle">
+                                    Deliveries waiting for rider assignment
+                                </p>
+
+                            </div>
+
+                            <button class="btn btn-secondary" id="viewAllRequests">
+                                View All
+                            </button>
+
+                        </div>
+
+
+                        <div class="table-wrapper">
+
+                            <table class="data-table">
+
+                                <thead>
+
+                                    <tr>
+                                        <th>Delivery ID</th>
+                                        <th>Customer</th>
+                                        <th>Destination</th>
+                                        <th>Vehicle</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+
+                                </thead>
+
+
+                                <tbody id="openDeliveriesBody">
+
+                                    <!-- Generated by dispatcher.js -->
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- RIDER AVAILABILITY -->
+
+                    <div class="card dispatcher-card">
+
+                        <div class="card-header">
+
+                            <div>
+
+                                <h3 class="card-title">
+                                    Rider Availability
+                                </h3>
+
+                                <p class="card-subtitle">
+                                    Review rider status, vehicle compatibility,
+                                    and remaining capacity.
+                                </p>
+
+                            </div>
+
+                            <button class="btn btn-secondary" id="viewAllRiders">
+                                View All
+                            </button>
+
+                        </div>
+
+
+                        <div class="table-wrapper">
+
+                            <table class="data-table">
+
+                                <thead>
+
+                                    <tr>
+                                        <th>Rider</th>
+                                        <th>Status</th>
+                                        <th>Vehicle</th>
+                                        <th>Capacity</th>
+                                        <th>Active Deliveries</th>
+                                        <th>Remaining</th>
+                                    </tr>
+
+                                </thead>
+
+
+                                <tbody id="riderAvailabilityBody">
+
+                                    <!-- Generated by dispatcher.js -->
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================
+                 DELIVERY REQUESTS
+            ========================== -->
+
+                <section class="portal-section" id="delivery-requests">
+
+                    <div class="page-heading">
+
+                        <div>
+
+                            <h2>
+                                Delivery Requests
+                            </h2>
+
+                            <p>
+                                Review open deliveries and assign suitable riders.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="delivery-request-list" id="deliveryRequestList">
+
+                        <!-- Generated by dispatcher.js -->
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================
+                 RIDERS
+            ========================== -->
+
+                <section class="portal-section" id="riders">
+
+                    <div class="page-heading">
+
+                        <div>
+
+                            <h2>
+                                Riders
+                            </h2>
+
+                            <p>
+                                Review rider availability, capacity,
+                                and vehicle compatibility.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="rider-list" id="riderList">
+
+                        <!-- Generated by dispatcher.js -->
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================
+                 ASSIGNMENTS
+            ========================== -->
+
+                <section class="portal-section" id="assignments">
+
+                    <div class="page-heading">
+
+                        <div>
+
+                            <h2>
+                                Assignment Monitoring
+                            </h2>
+
+                            <p>
+                                Monitor active delivery assignments
+                                and reassign when necessary.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="assignment-list" id="assignmentList">
+
+                        <!-- Generated by dispatcher.js -->
+
+                    </div>
+
+                </section>
+
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- JavaScript -->
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@26.0.0"></script>
+    <script src="js/wasili-client.js"></script>
+    <script src="js/dispatcher.js"></script>
+
 </body>
 
 </html>

@@ -7,6 +7,18 @@ recorded with who did it and when. Built on Appwrite as a full
 Backend-as-a-Service - Auth, TablesDB, Realtime, and Functions - no custom
 server.
 
+## Contents
+
+- [Roles](#roles-contract-sec-2)
+- [Delivery status flow](#delivery-status-flow-contract-sec-5)
+- [Rider capacity and vehicle compatibility](#rider-capacity-and-vehicle-compatibility-contract-sec-6-7)
+- [Project structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+- [Functions](#functions-every-write-with-a-business-rule)
+- [Accountability](#accountability-contract-sec-9)
+- [What's deferred](#whats-deferred-and-why---matches-the-contracts-own-mvp-boundary-sec-11)
+
 ## Roles (contract sec 2)
 
 | Role | Label | Can do |
@@ -55,6 +67,30 @@ A rider's vehicle covers any job at or below its tier. See
 system on every assign/reject/confirm; `OFFLINE`/`UNAVAILABLE` are set
 manually by the rider and always win over the computed state.
 
+## Project structure
+
+```
+public/               Static front end - three portals + shared client
+  index.html             Sign-in
+  retailer.html           RetailerStaff portal
+  dispatcher.html          Dispatcher dashboard
+  rider.html               Rider portal
+  js/wasili-client.js      Shared Appwrite Web SDK setup + helpers
+  css/                     Shared and per-portal styles
+functions/             Appwrite Functions - one per business-rule write
+scripts/
+  setup.js                Seeds database, tables, and demo accounts
+  test-domain.js           Vehicle-compatibility/capacity test table
+DOMAIN_RULES.js        Shared status-flow and vehicle-tier constants
+appwrite.config.json   Function definitions for `appwrite push functions`
+```
+
+## Prerequisites
+
+- Node.js 18+ and npm
+- An [Appwrite](https://appwrite.io) project (Cloud or self-hosted)
+- [Appwrite CLI](https://appwrite.io/docs/tooling/command-line/installation) for deploying Functions
+
 ## Setup
 
 ```
@@ -77,7 +113,7 @@ version, tick both sets if you see both). `.env` is gitignored - never
 commit it; `.env.example` is the template that's safe to commit. Then:
 
 ```
-node scripts/setup.js
+npm run setup
 ```
 
 Creates the `wasili` database, its three tables, and five seed accounts -
@@ -93,7 +129,7 @@ Safe to re-run - existing accounts are skipped, not reset.
 If you're rotating away from a previously-leaked seed password: changing
 the code doesn't invalidate accounts that already exist with the old one.
 Reset each account's password from Console > Auth > Users, or delete and
-re-run `node scripts/setup.js` to recreate them with fresh ones.
+re-run `npm run setup` to recreate them with fresh ones.
 
 If setup fails with `additional_resource_not_allowed` on the database
 step, your Appwrite plan is at its database limit (shared across your
@@ -111,8 +147,18 @@ appwrite push functions
 (reads `appwrite.config.json` - set `projectId` there first)
 
 Point the frontend at your project in `public/js/wasili-client.js`
-(`APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`), then serve `public/` with
-anything static (`npx serve public`).
+(`APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`), then serve `public/` locally:
+
+```
+npm run serve
+```
+
+To sanity-check the rider capacity/vehicle-compatibility rules without a
+live Appwrite project, run the domain test table:
+
+```
+npm test
+```
 
 ## Functions (every write with a business rule)
 
