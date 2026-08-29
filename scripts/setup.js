@@ -9,7 +9,7 @@
 // Safe to re-run - every create call skips if it already exists.
 
 require("dotenv").config();
-const { Client, Databases, TablesDB, Users, ID, Permission, Role } = require("node-appwrite");
+const { Client, Databases, TablesDB, Users, ID, Permission, Role, Query } = require("node-appwrite");
 
 const {
   APPWRITE_ENDPOINT,
@@ -245,12 +245,25 @@ async function seedUsers() {
       console.log(`created  ${acc.role.padEnd(12)} ${acc.username.padEnd(8)} pw ${password}${acc.vehicleType ? `  ${acc.vehicleType} x${acc.capacity}` : ""}`);
     } catch (err) {
       if (err.code === 409) {
+        // Account already exists (this is the normal case on every re-run
+        // after the first). We still need its real userId so we can check
+        // whether the *riders row* keyed to that id exists - a run that
+        // was interrupted between creating the account and creating the
+        // row (or an account made by hand in the Console) would otherwise
+        // leave that gap forever, since "account exists" used to mean
+        // "skip everything else for this account".
+        const existing = await users.list({ queries: [Query.equal("email", syntheticEmail(acc.username))] });
+        if (existing.total === 0) {
+          console.error(`\nAccount for ${acc.username} reported as existing but could not be looked up by email`);
+          throw err;
+        }
+        userId = existing.users[0].$id;
         console.log(`exists   ${acc.role.padEnd(12)} ${acc.username}`);
-        continue;
+      } else {
+        console.error(`\nFailed creating account: ${acc.username}`);
+        console.error(explain(err));
+        throw err;
       }
-      console.error(`\nFailed creating account: ${acc.username}`);
-      console.error(explain(err));
-      throw err;
     }
 
     if (acc.role === "rider") {

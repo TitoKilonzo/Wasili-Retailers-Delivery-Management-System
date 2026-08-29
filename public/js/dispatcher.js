@@ -44,8 +44,16 @@ function mapRiderRow(row) {
     };
 }
 
+// Background polling (the 30s safety-net interval, and Realtime events
+// firing off-screen) shouldn't pop a blocking alert() every time it hits
+// the same error - once is a notification, every 30s forever is spam
+// that locks up the tab. Only re-alert if the message actually changed.
+let lastDispatcherErrorShown = null;
+
 function showDispatcherError(message) {
     console.error(message);
+    if (message === lastDispatcherErrorShown) return;
+    lastDispatcherErrorShown = message;
     alert(message);
 }
 
@@ -60,6 +68,7 @@ async function refreshData() {
         riders = riderRows.map(mapRiderRow);
 
         renderAll();
+        lastDispatcherErrorShown = null;
     } catch (err) {
         console.error("Failed to load dispatcher data:", err);
         showDispatcherError(

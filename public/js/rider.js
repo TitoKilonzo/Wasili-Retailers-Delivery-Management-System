@@ -41,19 +41,37 @@ function mapDeliveryRow(row) {
     };
 }
 
+// Background polling (the 30s safety-net interval, and Realtime events
+// firing off-screen) shouldn't pop a blocking alert() every time it hits
+// the same error - once is a notification, every 30s forever is spam
+// that locks up the tab. Only re-alert if the message actually changed.
+let lastRiderErrorShown = null;
+
 function showRiderError(message) {
     console.error(message);
+    if (message === lastRiderErrorShown) return;
+    lastRiderErrorShown = message;
     alert(message);
+}
+
+function clearRiderError() {
+    lastRiderErrorShown = null;
 }
 
 async function refreshData() {
     if (!riderSession) return;
 
+    let riderRow;
     try {
-        const [riderRow, deliveryRows] = await Promise.all([
-            Wasili.getRider(riderSession.id),
-            Wasili.listDeliveries([Wasili.Query.equal("riderId", riderSession.id)])
-        ]);
+        riderRow = await Wasili.getRider(riderSession.id);
+    } catch (err) {
+        console.error("Failed to load rider profile:", err);
+        showRiderError("Your rider profile hasn't been set up yet. Ask your dispatcher to add you as a rider.");
+        return;
+    }
+
+    try {
+        const deliveryRows = await Wasili.listDeliveries([Wasili.Query.equal("riderId", riderSession.id)]);
 
         currentRider = {
             riderId: riderRow.$id,
@@ -68,9 +86,10 @@ async function refreshData() {
         assignments = deliveryRows.map(mapDeliveryRow);
 
         renderAll();
+        clearRiderError();
     } catch (err) {
-        console.error("Failed to load rider data:", err);
-        showRiderError("Could not load your assignments from the server: " + err.message);
+        console.error("Failed to load rider assignments:", err);
+        showRiderError("Could not load your assignments. Please try again.");
     }
 }
 

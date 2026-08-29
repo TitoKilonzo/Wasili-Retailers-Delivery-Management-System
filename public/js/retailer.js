@@ -625,8 +625,16 @@ function mapRowToDelivery(row, ridersMap = {}) {
 // BACKEND API INTEGRATION (WASILI CLIENT)
 // ========================================
 
+// Background polling (the 30s safety-net interval, and Realtime events
+// firing off-screen) shouldn't pop a blocking alert() every time it hits
+// the same error - once is a notification, every 30s forever is spam
+// that locks up the tab. Only re-alert if the message actually changed.
+let lastRetailerErrorShown = null;
+
 function showErrorMessage(message) {
     console.error(message);
+    if (message === lastRetailerErrorShown) return;
+    lastRetailerErrorShown = message;
     alert(message);
 }
 
@@ -647,6 +655,7 @@ async function syncWithBackend() {
         // stale data on screen.
         deliveries = (rows || []).map(r => mapRowToDelivery(r, ridersMap));
         renderAll();
+        lastRetailerErrorShown = null;
     } catch (err) {
         console.error("Backend sync failed:", err);
         showErrorMessage("Could not load your deliveries from the server: " + err.message);
