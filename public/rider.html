@@ -1,1 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Wasili | Rider Portal</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/rider.css">
+</head>
+
+<body>
+
+    <div class="app-shell">
+
+        <!-- =========================
+             SIDEBAR
+        ========================== -->
+
+        <aside class="sidebar" id="sidebar">
+
+            <div class="brand">
+                <img
+                    src="favicon.svg"
+                    alt="Wasili Logo"
+                    class="brand-logo"
+                    width="48"
+                    height="48"
+                >
+
+                <div>
+                    <h1>Wasili</h1>
+                    <span>Rider Portal</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+
+                <button
+                    class="nav-link active"
+                    data-section="dashboard"
+                >
+                    <span class="nav-icon">⌂</span>
+                    <span>Dashboard</span>
+                </button>
+
+                <button
+                    class="nav-link"
+                    data-section="assignments"
+                >
+                    <span class="nav-icon">▣</span>
+                    <span>My Assignments</span>
+                </button>
+
+                <button
+                    class="nav-link"
+                    data-section="completed"
+                >
+                    <span class="nav-icon">✓</span>
+                    <span>Completed</span>
+                </button>
+
+            </nav>
+
+            <div class="sidebar-footer">
+
+                <div class="staff-info">
+
+                    <div class="staff-avatar" id="riderAvatar">
+                        KM
+                    </div>
+
+                    <div>
+                        <strong id="riderName">
+                            Kevin Mwangi
+                        </strong>
+
+                        <span>
+                            Rider
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- =========================
+             MAIN AREA
+        ========================== -->
+
+        <main class="main-area">
+
+            <!-- TOP BAR -->
+
+            <header class="topbar">
+
+                <div class="topbar-left">
+
+                    <button
+                        class="menu-toggle"
+                        id="menuToggle"
+                        aria-label="Open navigation"
+                    >
+                        ☰
+                    </button>
+
+                    <div>
+
+                        <h2 id="pageTitle">
+                            Dashboard
+                        </h2>
+
+                        <p id="pageSubtitle">
+                            View and manage your delivery assignments
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </header>
+
+
+            <div class="page-content">
+
+
+                <!-- =========================
+                     DASHBOARD
+                ========================== -->
+
+                <section
+                    class="portal-section active-section"
+                    id="dashboard"
+                >
+
+                    <div class="page-heading">
+
+                        <div>
+
+                            <h2>
+                                Rider Dashboard
+                            </h2>
+
+                            <p>
+                                View your current assignments and delivery progress.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- RIDER SUMMARY -->
+
+                    <div class="stats-grid">
+
+                        <div class="stat-card">
+
+                            <div class="stat-top">
+
+                                <span class="stat-label">
+                                    Assigned
+                                </span>
+
+                                <span class="stat-icon">
+                                    ▣
+                                </span>
+
+                            </div>
+
+                            <div
+                                class="stat-value"
+                                id="assignedCount"
+                            >
+                                0
+                            </div>
+
+                            <span class="stat-description">
+                                Deliveries awaiting your action
+                            </span>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <div class="stat-top">
+
+                                <span class="stat-label">
+                                    In Progress
+                                </span>
+
+                                <span class="stat-icon">
+                                    →
+                                </span>
+
+                            </div>
+
+                            <div
+                                class="stat-value"
+                                id="inProgressCount"
+                            >
+                                0
+                            </div>
+
+                            <span class="stat-description">
+                                Deliveries currently in progress
+                            </span>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <div class="stat-top">
+
+                                <span class="stat-label">
+                                    Completed
+                                </span>
+
+                                <span class="stat-icon">
+                                    ✓
+                                </span>
+
+                            </div>
+
+                            <div
+                                class="stat-value"
+                                id="completedCount"
+                            >
+                                0
+                            </div>
+
+                            <span class="stat-description">
+                                Deliveries successfully completed
+                            </span>
+
+                        </div>
+
+
+                        <div class="stat-card">
+
+                            <div class="stat-top">
+
+                                <span class="stat-label">
+                                    Capacity
+                                </span>
+
+                                <span class="stat-icon">
+                                    ◉
+                                </span>
+
+                            </div>
+
+                            <div
+                                class="stat-value"
+                                id="capacityValue"
+                            >
+                                0 / 0
+                            </div>
+
+                            <span class="stat-description">
+                                Active deliveries
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- CURRENT ASSIGNMENTS -->
+
+                    <div class="card rider-card">
+
+                        <div class="card-header">
+
+                            <div>
+
+                                <h3 class="card-title">
+                                    Current Assignments
+                                </h3>
+
+                                <p class="card-subtitle">
+                                    Deliveries currently assigned to you
+                                </p>
+
+                            </div>
+
+                            <button
+                                class="btn btn-secondary"
+                                id="viewAssignments"
+                            >
+                                View All
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            class="rider-assignment-list"
+                            id="dashboardAssignments"
+                        >
+                            <!-- Generated by rider.js -->
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================
+                     MY ASSIGNMENTS
+                ========================== -->
+
+                <section
+                    class="portal-section"
+                    id="assignments"
+                >
+
+                    <div class="page-heading">
+
+                        <div>
+
+                            <h2>
+                                My Assignments
+                            </h2>
+
+                            <p>
+                                Review assigned deliveries and update their status.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="rider-assignment-list"
+                        id="assignmentList"
+                    >
+                        <!-- Generated by rider.js -->
+                    </div>
+
+                </section>
+
+
+                <!-- =========================
+                     COMPLETED DELIVERIES
+                ========================== -->
+
+                <section
+                    class="portal-section"
+                    id="completed"
+                >
+
+                    <div class="page-heading">
+
+                        <div>
+
+                            <h2>
+                                Completed Deliveries
+                            </h2>
+
+                            <p>
+                                Review deliveries that you have completed.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="rider-assignment-list"
+                        id="completedList"
+                    >
+                        <!-- Generated by rider.js -->
+                    </div>
+
+                </section>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- JavaScript -->
+
+    <script src="js/wasili-client.js"></script>
+    <script src="js/rider.js"></script>
+
+</body>
+</html>
 
