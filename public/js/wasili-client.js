@@ -18,9 +18,9 @@ function syntheticEmail(username) {
 }
 
 // Appwrite labels are lowercase; contract's own terms (RetailerStaff,
-// Dispatcher, Rider) are what the UI displays.
-const ROLE_LABELS = ["retailerstaff", "dispatcher", "rider"];
-const ROLE_DISPLAY = { retailerstaff: "RetailerStaff", dispatcher: "Dispatcher", rider: "Rider" };
+// Dispatcher, Rider, Admin) are what the UI displays.
+const ROLE_LABELS = ["retailerstaff", "dispatcher", "rider", "admin"];
+const ROLE_DISPLAY = { retailerstaff: "RetailerStaff", dispatcher: "Dispatcher", rider: "Rider", admin: "Admin" };
 
 const Wasili = {
   ROLE_DISPLAY,
@@ -126,6 +126,10 @@ const Wasili = {
   // (see scripts/setup.js), not a business rule, so no Function needed.
   async updateOwnRiderStatus(riderId, riderStatus) {
     return tablesDB.updateRow({ databaseId: DATABASE_ID, tableId: "riders", rowId: riderId, data: { riderStatus } });
+  },
+
+  async updateRider(riderId, updates) {
+    return tablesDB.updateRow({ databaseId: DATABASE_ID, tableId: "riders", rowId: riderId, data: updates });
   },
 
   // ---------- Realtime ----------

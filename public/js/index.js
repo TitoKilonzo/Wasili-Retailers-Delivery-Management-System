@@ -6,6 +6,7 @@ const ROLE_REDIRECT = {
     retailerstaff: "retailer.html",
     dispatcher: "dispatcher.html",
     rider: "rider.html",
+    admin: "admin.html",
 };
 
 const loginForm = document.getElementById("loginForm");

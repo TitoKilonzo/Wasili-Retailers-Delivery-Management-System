@@ -61,32 +61,40 @@ function clearRiderError() {
 async function refreshData() {
     if (!riderSession) return;
 
-    let riderRow;
+    let riderRow = null;
     try {
         riderRow = await Wasili.getRider(riderSession.id);
     } catch (err) {
-        console.error("Failed to load rider profile:", err);
-        showRiderError("Your rider profile hasn't been set up yet. Ask your dispatcher to add you as a rider.");
-        return;
+        console.warn("Rider profile missing; continuing with assignment-only view:", err);
     }
 
     try {
         const deliveryRows = await Wasili.listDeliveries([Wasili.Query.equal("riderId", riderSession.id)]);
 
-        currentRider = {
-            riderId: riderRow.$id,
-            name: riderRow.name,
-            phone: riderRow.phone,
-            vehicleType: riderRow.vehicleType,
-            capacity: riderRow.capacity,
-            activeDeliveries: riderRow.activeDeliveries,
-            riderStatus: riderRow.riderStatus
-        };
+        currentRider = riderRow
+            ? {
+                riderId: riderRow.$id,
+                name: riderRow.name,
+                phone: riderRow.phone,
+                vehicleType: riderRow.vehicleType,
+                capacity: riderRow.capacity,
+                activeDeliveries: riderRow.activeDeliveries,
+                riderStatus: riderRow.riderStatus
+            }
+            : {
+                riderId: riderSession.id,
+                name: riderSession.name,
+                phone: "",
+                vehicleType: "",
+                capacity: 0,
+                activeDeliveries: 0,
+                riderStatus: "AVAILABLE"
+            };
 
         assignments = deliveryRows.map(mapDeliveryRow);
 
         renderAll();
-        clearRiderError();
+        if (riderRow) clearRiderError();
     } catch (err) {
         console.error("Failed to load rider assignments:", err);
         showRiderError("Could not load your assignments. Please try again.");

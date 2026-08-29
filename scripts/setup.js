@@ -141,7 +141,11 @@ different project eating the slot. Pick one:
       tableId: RIDERS_TABLE,
       name: "riders",
       rowSecurity: true,
-      permissions: [Permission.read(Role.label("dispatcher")), Permission.read(Role.label("retailerstaff"))],
+      permissions: [
+        Permission.read(Role.label("dispatcher")),
+        Permission.read(Role.label("retailerstaff")),
+        Permission.read(Role.label("admin")),
+      ],
     }),
     "table riders"
   );
@@ -163,7 +167,10 @@ different project eating the slot. Pick one:
       tableId: DELIVERIES_TABLE,
       name: "deliveries",
       rowSecurity: true,
-      permissions: [Permission.read(Role.label("dispatcher"))],
+      permissions: [
+        Permission.read(Role.label("dispatcher")),
+        Permission.read(Role.label("admin")),
+      ],
     }),
     "table deliveries"
   );
@@ -209,6 +216,7 @@ different project eating the slot. Pick one:
 const seedAccounts = [
   { name: "Jane Wambui", username: "jane", phone: "0711000001", role: "retailerstaff" },
   { name: "Peter Kamau", username: "peter", phone: "0711000002", role: "dispatcher" },
+  { name: "Cynthia Mugo", username: "cynthia", phone: "0711000010", role: "admin" },
   { name: "Brian Otieno", username: "brian", phone: "0711000003", role: "rider", vehicleType: "BICYCLE", capacity: 2 },
   { name: "Faith Wanjiru", username: "faith", phone: "0711000004", role: "rider", vehicleType: "MOTORCYCLE", capacity: 4 },
   { name: "Kevin Mutiso", username: "kevin", phone: "0711000005", role: "rider", vehicleType: "VAN", capacity: 6 },
@@ -280,8 +288,10 @@ async function seedUsers() {
           permissions: [
             Permission.read(Role.label("dispatcher")),
             Permission.read(Role.label("retailerstaff")),
+            Permission.read(Role.label("admin")),
             Permission.update(Role.user(userId)), // rider can toggle their own AVAILABLE/OFFLINE/UNAVAILABLE
             Permission.update(Role.label("dispatcher")), // Functions update activeDeliveries/riderStatus during assign/complete
+            Permission.update(Role.label("admin")),
           ],
         }),
         `riders row for ${acc.name}`
