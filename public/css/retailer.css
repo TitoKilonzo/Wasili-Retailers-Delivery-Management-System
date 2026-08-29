@@ -1,5 +1,25 @@
 /* ========================================
-   RETAILER PORTAL SPECIFIC STYLES
+   WASILI RETAILER PORTAL
+   Retailer-specific styles
+   Visual direction:
+   Clean • Light • Green • Balanced
+======================================== */
+
+:root {
+    --gray-50: #131a17;
+    --gray-100: #1a211d;
+    --gray-200: #2a3430;
+    --gray-300: #3a4743;
+    --gray-400: #75807a;
+    --gray-500: #a0aaa5;
+    --gray-600: #c6cfc9;
+    --gray-700: #dfe7e2;
+    --gray-900: #f2f6f3;
+    --white: #1b221f;
+}
+
+/* ========================================
+   GLOBAL
 ======================================== */
 
 * {
@@ -9,9 +29,12 @@
 body {
     margin: 0;
     background: var(--gray-50);
-    color: var(--gray-900);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: var(--gray-700);
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
 }
+
 
 /* ========================================
    BRAND / SIDEBAR
@@ -37,16 +60,22 @@ body {
 
 .brand h1 {
     margin: 0;
-    font-size: 1.1rem;
-    color: var(--green-700);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--green-400);
 }
 
 .brand span {
     display: block;
     margin-top: 3px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--gray-500);
 }
+
+
+/* ========================================
+   SIDEBAR NAVIGATION
+======================================== */
 
 .sidebar-nav {
     display: flex;
@@ -60,33 +89,54 @@ body {
     border: none;
     background: transparent;
     color: var(--gray-600);
-    padding: 12px;
+    padding: 11px 12px;
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     gap: var(--space-3);
     cursor: pointer;
     text-align: left;
-    font-size: 0.95rem;
+    font-family: inherit;
+    font-size: 0.88rem;
     font-weight: 600;
     transition: var(--transition);
 }
 
+.sidebar,
+.main-area,
+.page-content,
+.card,
+.form-section-card,
+.delivery-item,
+.stat-card,
+.table-wrapper,
+.delivery-request-card,
+.rider-card,
+.assignment-card {
+    color: var(--gray-700);
+}
+
 .nav-link:hover {
-    background: var(--green-50);
-    color: var(--green-700);
+    background: rgba(34, 197, 94, 0.06);
+    color: var(--gray-700);
 }
 
 .nav-link.active {
-    background: var(--green-100);
-    color: var(--green-700);
+    background: rgba(34, 197, 94, 0.08);
+    color: var(--gray-900);
+    border-color: rgba(34, 197, 94, 0.14);
 }
 
 .nav-icon {
     width: 24px;
     text-align: center;
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
+
+
+/* ========================================
+   SIDEBAR FOOTER
+======================================== */
 
 .sidebar-footer {
     margin-top: auto;
@@ -117,11 +167,17 @@ body {
     display: block;
 }
 
+.staff-info strong {
+    color: var(--gray-700);
+    font-size: 0.85rem;
+}
+
 .staff-info span {
     margin-top: 3px;
     color: var(--gray-500);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
+
 
 /* ========================================
    TOPBAR
@@ -135,13 +191,29 @@ body {
 
 .topbar h2 {
     margin: 0;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--gray-700);
 }
 
 .topbar p {
     margin: 4px 0 0;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--gray-500);
+}
+
+.page-heading h2,
+.card-title,
+.form-section-heading h3,
+.delivery-id,
+.detail-value,
+.rider-info strong,
+.staff-info strong,
+.stat-value,
+.delivery-item-header h3,
+.table th,
+.topbar h2 {
+    color: var(--gray-900);
 }
 
 .menu-toggle {
@@ -152,11 +224,12 @@ body {
     height: 42px;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
 }
 
+
 /* ========================================
-   SECTIONS
+   PORTAL SECTIONS
 ======================================== */
 
 .portal-section {
@@ -166,6 +239,11 @@ body {
 .portal-section.active-section {
     display: block;
 }
+
+
+/* ========================================
+   PAGE HEADINGS
+======================================== */
 
 .page-heading {
     display: flex;
@@ -177,16 +255,20 @@ body {
 
 .page-heading h2 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--gray-700);
 }
 
 .page-heading p {
     margin: 6px 0 0;
     color: var(--gray-500);
+    font-size: 0.85rem;
 }
 
+
 /* ========================================
-   ALERT
+   ALERTS
 ======================================== */
 
 .alert {
@@ -207,6 +289,7 @@ body {
 .alert.show {
     display: flex;
 }
+
 
 /* ========================================
    STATISTICS
@@ -232,12 +315,13 @@ body {
 .stat-description {
     display: block;
     margin-top: var(--space-2);
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--gray-500);
 }
 
+
 /* ========================================
-   CARD
+   CARDS
 ======================================== */
 
 .deliveries-card {
@@ -246,9 +330,10 @@ body {
 
 .card-subtitle {
     margin: 5px 0 0;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--gray-500);
 }
+
 
 /* ========================================
    FORM
@@ -294,13 +379,15 @@ body {
 
 .form-section-heading h3 {
     margin: 0;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--gray-700);
 }
 
 .form-section-heading p {
     margin: 4px 0 0;
     color: var(--gray-500);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
 }
 
 .form-grid {
@@ -320,9 +407,9 @@ body {
 }
 
 .form-group label {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--gray-700);
+    color: var(--gray-600);
 }
 
 .form-group input,
@@ -331,10 +418,10 @@ body {
     width: 100%;
     border: 1px solid var(--gray-300);
     border-radius: var(--radius-sm);
-    padding: 12px 14px;
+    padding: 11px 14px;
     font: inherit;
-    color: var(--gray-900);
-    background: var(--white);
+    color: var(--gray-700);
+    background: var(--gray-100);
     transition: var(--transition);
 }
 
@@ -361,6 +448,7 @@ body {
     gap: var(--space-3);
     margin-top: var(--space-6);
 }
+
 
 /* ========================================
    DELIVERY STATUS CARDS
@@ -390,13 +478,15 @@ body {
 
 .delivery-id {
     margin: 0 0 5px;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--gray-700);
 }
 
 .delivery-customer {
     margin: 0;
     color: var(--gray-500);
-    font-size: 0.875rem;
+    font-size: 0.8rem;
 }
 
 .delivery-details-grid {
@@ -410,23 +500,37 @@ body {
     display: block;
     margin-bottom: 5px;
     color: var(--gray-500);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 600;
 }
 
 .detail-value {
     color: var(--gray-700);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
 }
+
+
+/* ========================================
+   RIDER CARD
+======================================== */
 
 .rider-card {
     margin-top: var(--space-5);
     padding: var(--space-4);
-    background: var(--green-50);
+    background: rgba(34, 197, 94, 0.05);
+    border: 1px solid rgba(34, 197, 94, 0.08);
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     gap: var(--space-3);
+    transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+}
+
+.rider-card:hover {
+    background: rgba(34, 197, 94, 0.07);
+    border-color: rgba(34, 197, 94, 0.12);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
 .rider-avatar {
@@ -446,9 +550,14 @@ body {
     display: block;
 }
 
+.rider-info strong {
+    color: var(--gray-700);
+    font-size: 0.85rem;
+}
+
 .rider-info span {
     margin-top: 3px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--gray-500);
 }
 
@@ -457,6 +566,26 @@ body {
     display: flex;
     justify-content: flex-end;
 }
+
+
+/* ========================================
+   SMALL TEXT / SUPPORTING INFORMATION
+======================================== */
+
+.description,
+.card-subtitle,
+.stat-description,
+.delivery-customer,
+.rider-info span {
+    font-weight: 400;
+}
+
+.page-heading p,
+.topbar p,
+.brand span {
+    line-height: 1.5;
+}
+
 
 /* ========================================
    RESPONSIVE
@@ -499,8 +628,12 @@ body {
         grid-template-columns: 1fr;
         gap: var(--space-3);
     }
-
 }
+
+
+/* ========================================
+   MOBILE
+======================================== */
 
 @media (max-width: 480px) {
 
@@ -517,4 +650,11 @@ body {
         width: 100%;
     }
 
+    .page-heading h2 {
+        font-size: 1.2rem;
+    }
+
+    .topbar h2 {
+        font-size: 0.95rem;
+    }
 }
