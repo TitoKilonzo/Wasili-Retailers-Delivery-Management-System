@@ -9,13 +9,19 @@
       "path": "functions/create-delivery",
       "entrypoint": "src/main.js",
       "commands": "npm install",
-      "execute": ["label:retailerstaff"],
+      "execute": [
+        "label:retailerstaff"
+      ],
       "events": [],
       "schedule": "",
       "timeout": 15,
       "enabled": true,
       "logging": true,
-      "scopes": ["databases.read", "databases.write", "users.read"]
+      "scopes": [
+        "databases.read",
+        "databases.write",
+        "users.read"
+      ]
     },
     {
       "$id": "assign-delivery",
@@ -24,13 +30,19 @@
       "path": "functions/assign-delivery",
       "entrypoint": "src/main.js",
       "commands": "npm install",
-      "execute": ["label:dispatcher"],
+      "execute": [
+        "label:dispatcher"
+      ],
       "events": [],
       "schedule": "",
       "timeout": 15,
       "enabled": true,
       "logging": true,
-      "scopes": ["databases.read", "databases.write", "users.read"]
+      "scopes": [
+        "databases.read",
+        "databases.write",
+        "users.read"
+      ]
     },
     {
       "$id": "accept-assignment",
@@ -39,13 +51,18 @@
       "path": "functions/accept-assignment",
       "entrypoint": "src/main.js",
       "commands": "npm install",
-      "execute": ["label:rider"],
+      "execute": [
+        "label:rider"
+      ],
       "events": [],
       "schedule": "",
       "timeout": 15,
       "enabled": true,
       "logging": true,
-      "scopes": ["databases.read", "databases.write"]
+      "scopes": [
+        "databases.read",
+        "databases.write"
+      ]
     },
     {
       "$id": "reject-assignment",
@@ -54,13 +71,18 @@
       "path": "functions/reject-assignment",
       "entrypoint": "src/main.js",
       "commands": "npm install",
-      "execute": ["label:rider"],
+      "execute": [
+        "label:rider"
+      ],
       "events": [],
       "schedule": "",
       "timeout": 15,
       "enabled": true,
       "logging": true,
-      "scopes": ["databases.read", "databases.write"]
+      "scopes": [
+        "databases.read",
+        "databases.write"
+      ]
     },
     {
       "$id": "advance-status",
@@ -69,13 +91,18 @@
       "path": "functions/advance-status",
       "entrypoint": "src/main.js",
       "commands": "npm install",
-      "execute": ["label:rider"],
+      "execute": [
+        "label:rider"
+      ],
       "events": [],
       "schedule": "",
       "timeout": 15,
       "enabled": true,
       "logging": true,
-      "scopes": ["databases.read", "databases.write"]
+      "scopes": [
+        "databases.read",
+        "databases.write"
+      ]
     },
     {
       "$id": "confirm-delivery",
@@ -84,13 +111,18 @@
       "path": "functions/confirm-delivery",
       "entrypoint": "src/main.js",
       "commands": "npm install",
-      "execute": ["label:rider"],
+      "execute": [
+        "label:rider"
+      ],
       "events": [],
       "schedule": "",
       "timeout": 15,
       "enabled": true,
       "logging": true,
-      "scopes": ["databases.read", "databases.write"]
+      "scopes": [
+        "databases.read",
+        "databases.write"
+      ]
     },
     {
       "$id": "cancel-delivery",
@@ -99,13 +131,20 @@
       "path": "functions/cancel-delivery",
       "entrypoint": "src/main.js",
       "commands": "npm install",
-      "execute": ["label:dispatcher", "label:retailerstaff"],
+      "execute": [
+        "label:dispatcher",
+        "label:retailerstaff"
+      ],
       "events": [],
       "schedule": "",
       "timeout": 15,
       "enabled": true,
       "logging": true,
-      "scopes": ["databases.read", "databases.write", "users.read"]
+      "scopes": [
+        "databases.read",
+        "databases.write",
+        "users.read"
+      ]
     }
   ]
 }

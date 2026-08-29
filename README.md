@@ -62,6 +62,14 @@ npm install
 cp .env.example .env
 ```
 
+`.env.example` only feeds `scripts/setup.js`. The three portal pages load
+the Appwrite Web SDK from a CDN and read `APPWRITE_ENDPOINT` /
+`APPWRITE_PROJECT_ID` / `DATABASE_ID` from constants at the top of
+`public/js/wasili-client.js` instead - Functions can't read a browser file
+or a local `.env` either, so they hardcode the same values at the top of
+each `functions/*/src/main.js`. If you ever change databases, update all
+three places by hand; there's no shared config file they all read from.
+
 Fill in `.env` (endpoint, project ID, an API key with read+write on
 Databases/Tables, Columns/Attributes, Rows/Documents, and Users - Console
 may label these with the old or new names depending on your project's
@@ -75,9 +83,17 @@ node scripts/setup.js
 Creates the `wasili` database, its three tables, and five seed accounts -
 one RetailerStaff, one Dispatcher, three Riders with **different** vehicles
 and capacities on purpose, so the compatibility/capacity rules are actually
-demonstrable. Prints username/password pairs to your terminal only - share
-those with your team directly, don't paste them into a committed file.
-Safe to re-run.
+demonstrable. Each account gets its own random password, generated at seed
+time and printed to your terminal once - share those with your team
+directly, never paste one into a committed file, and never hardcode a
+password in this file itself (a fixed, shared seed password is exactly
+what got flagged and force-pushed out of this repo's history before).
+Safe to re-run - existing accounts are skipped, not reset.
+
+If you're rotating away from a previously-leaked seed password: changing
+the code doesn't invalidate accounts that already exist with the old one.
+Reset each account's password from Console > Auth > Users, or delete and
+re-run `node scripts/setup.js` to recreate them with fresh ones.
 
 If setup fails with `additional_resource_not_allowed` on the database
 step, your Appwrite plan is at its database limit (shared across your

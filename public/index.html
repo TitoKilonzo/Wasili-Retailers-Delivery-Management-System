@@ -1,96 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Wasili — Retailers Delivery Management System</title>
-<meta name="description" content="Wasili — Retailers Delivery Management System. Delivery coordination for small retailers: RetailerStaff, Dispatcher, and Rider, one shared record." />
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<link rel="stylesheet" href="/css/style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Wasili | Sign In</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Shared Team CSS -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Sign-in page CSS additions -->
+    <link rel="stylesheet" href="css/index.css">
 </head>
+
 <body>
-<div class="login-shell">
-  <div class="login-visual">
-    <div>
-      <div class="brand" style="margin-bottom: 40px;">
-        <div class="mark" style="background:rgba(255,255,255,0.12)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M4 7.5 8.2 17 12 8.7 15.8 17l3.3-8"/>
-            <circle cx="19.6" cy="6.4" r="1.4" fill="currentColor" stroke="none"/>
-          </svg>
+
+    <div class="login-shell">
+
+        <!-- HERO -->
+        <div class="login-hero">
+            <img src="img/hero-delivery.svg" alt="Shop-to-doorstep delivery route">
+            <div class="login-hero-text">
+                <h2>From shop to doorstep, tracked the whole way.</h2>
+                <p>Every request, assignment, and handoff recorded - who did it, and when.</p>
+            </div>
         </div>
-        <span class="brand-name" style="color:#fff;">Wasili</span>
-      </div>
+
+        <!-- FORM -->
+        <div class="login-card">
+
+            <div class="login-brand">
+                <img src="favicon.svg" alt="Wasili Logo">
+                <div>
+                    <h1>Wasili</h1>
+                    <p>Delivery coordination for small retailers</p>
+                </div>
+            </div>
+
+            <div class="login-error" id="loginError"></div>
+            <div class="login-info" id="loginInfo"></div>
+
+            <form class="login-form" id="loginForm">
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="e.g. jane" autocomplete="username"
+                        required autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password"
+                        autocomplete="current-password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="loginButton">
+                    Sign In
+                </button>
+
+            </form>
+
+            <div class="login-roles" id="loginRoles"></div>
+
+            <p class="login-footer">
+                No account? Ask your dispatcher - RetailerStaff, Dispatcher, and Rider
+                accounts are all created from the Appwrite Console, not self-signup.
+            </p>
+
+        </div>
+
     </div>
-    <img src="/img/hero-delivery.svg" alt="" />
-  </div>
 
-  <div class="login-form-panel">
-    <div class="login-box">
-      <h1>Sign in</h1>
-      <p class="sub">Use your username and password.</p>
-
-      <form id="loginForm" class="form-grid">
-        <div class="field">
-          <label for="role">Log in as</label>
-          <select id="role" name="role" required>
-            <option value="" disabled selected>Select role…</option>
-            <option value="retailerstaff">Retailer</option>
-            <option value="dispatcher">Dispatcher</option>
-            <option value="rider">Rider</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="username">Username</label>
-          <input id="username" name="username" autocapitalize="off" autocomplete="username" placeholder="e.g. jane" required />
-        </div>
-        <div class="field">
-          <label for="password">Password</label>
-          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Password or PIN" required minlength="8" />
-        </div>
-        <div id="formError" class="form-error"></div>
-        <button class="btn-primary" type="submit" id="submitBtn">Sign in</button>
-      </form>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/appwrite@26.2.0"></script>
-<script src="/js/wasili-client.js"></script>
-<script>
-  const form = document.getElementById("loginForm");
-  const errorEl = document.getElementById("formError");
-  const submitBtn = document.getElementById("submitBtn");
-  const roleRedirect = { retailerstaff: "/retailer.html", dispatcher: "/dispatcher.html", rider: "/rider.html" };
-
-  (function bootstrap() {
-    const session = Wasili.getSession();
-    if (session) window.location.href = roleRedirect[session.role] || "/index.html";
-  })();
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    errorEl.classList.remove("visible");
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Signing in…";
-
-    try {
-      const selectedRole = document.getElementById("role").value;
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const session = await Wasili.login(username, password);
-      if (session.role !== selectedRole) {
-        await Wasili.logout({ redirect: false });
-        throw new Error(`This account is registered as ${Wasili.ROLE_DISPLAY[session.role]}, not ${Wasili.ROLE_DISPLAY[selectedRole]}. Pick the right role and try again.`);
-      }
-      window.location.href = roleRedirect[session.role] || "/index.html";
-    } catch (err) {
-      errorEl.textContent = err.message;
-      errorEl.classList.add("visible");
-      submitBtn.disabled = false;
-      submitBtn.textContent = "Sign in";
-    }
-  });
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@26.0.0"></script>
+    <script src="js/icons.js"></script>
+    <script src="js/wasili-client.js"></script>
+    <script src="js/index.js"></script>
 </body>
+
 </html>

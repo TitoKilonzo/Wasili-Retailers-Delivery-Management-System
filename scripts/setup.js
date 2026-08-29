@@ -75,7 +75,13 @@ async function verifyConnection() {
 // run in their own managed environment and can't read this local .env), so
 // if you override them here, update every function to match. See
 // DOMAIN_RULES.js for why these constants live in more than one place.
-const DATABASE_ID = APPWRITE_DATABASE_ID || "reflex";
+// Must match the DATABASE_ID default baked into every functions/*/src/main.js
+// file and public/js/wasili-client.js - see the top-of-file comment for why
+// this can't just read one shared constant. If you override this via .env,
+// override it in those two places too (or set APPWRITE_DATABASE_ID as a
+// Function variable in appwrite.config.json / the Console instead of editing
+// the functions' fallback).
+const DATABASE_ID = APPWRITE_DATABASE_ID || "6a8f0d44001c63c5f21b";
 const RIDERS_TABLE = APPWRITE_RIDERS_COLLECTION_ID || "riders";
 const DELIVERIES_TABLE = APPWRITE_DELIVERIES_COLLECTION_ID || "deliveries";
 const CONFIRMATIONS_TABLE = APPWRITE_CONFIRMATIONS_COLLECTION_ID || "delivery_confirmations";
@@ -195,13 +201,17 @@ different project eating the slot. Pick one:
 }
 
 // Deliberately varied capacity/vehicle so the compatibility and capacity
-// rules in assign-delivery are actually exercisable during a demo.
+// rules in assign-delivery are actually exercisable during a demo. No
+// password here on purpose - a shared, hardcoded password is exactly the
+// kind of thing a secret scanner (and an attacker) flags the moment this
+// file is pushed. Each account gets its own random one at seed time,
+// generated below and printed once - never written to disk or committed.
 const seedAccounts = [
-  { name: "Jane Wambui", username: "jane", phone: "0711000001", password: "17284093", role: "retailerstaff" },
-  { name: "Peter Kamau", username: "peter", phone: "0711000002", password: "17284093", role: "dispatcher" },
-  { name: "Brian Otieno", username: "brian", phone: "0711000003", password: "17284093", role: "rider", vehicleType: "BICYCLE", capacity: 2 },
-  { name: "Faith Wanjiru", username: "faith", phone: "0711000004", password: "17284093", role: "rider", vehicleType: "MOTORCYCLE", capacity: 4 },
-  { name: "Kevin Mutiso", username: "kevin", phone: "0711000005", password: "17284093", role: "rider", vehicleType: "VAN", capacity: 6 },
+  { name: "Jane Wambui", username: "jane", phone: "0711000001", role: "retailerstaff" },
+  { name: "Peter Kamau", username: "peter", phone: "0711000002", role: "dispatcher" },
+  { name: "Brian Otieno", username: "brian", phone: "0711000003", role: "rider", vehicleType: "BICYCLE", capacity: 2 },
+  { name: "Faith Wanjiru", username: "faith", phone: "0711000004", role: "rider", vehicleType: "MOTORCYCLE", capacity: 4 },
+  { name: "Kevin Mutiso", username: "kevin", phone: "0711000005", role: "rider", vehicleType: "VAN", capacity: 6 },
 ];
 
 // Login runs on username + password now (see public/index.html /
@@ -212,15 +222,27 @@ function syntheticEmail(username) {
   return `${username.toLowerCase()}@wasili.local`;
 }
 
+// 16 random characters from an alphanumeric set with the visually
+// confusable ones (0/O, 1/l/I) dropped, since these get read off a
+// terminal by hand. Well past Appwrite's 8-character minimum.
+function generatePassword() {
+  const charset = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const bytes = require("crypto").randomBytes(16);
+  let pw = "";
+  for (let i = 0; i < bytes.length; i++) pw += charset[bytes[i] % charset.length];
+  return pw;
+}
+
 async function seedUsers() {
   console.log("\nSeeding accounts...\n");
   for (const acc of seedAccounts) {
     let userId;
+    const password = generatePassword();
     try {
-      const user = await users.create({ userId: ID.unique(), email: syntheticEmail(acc.username), password: acc.password, name: acc.name });
+      const user = await users.create({ userId: ID.unique(), email: syntheticEmail(acc.username), password, name: acc.name });
       userId = user.$id;
       await users.updateLabels({ userId, labels: [acc.role] });
-      console.log(`created  ${acc.role.padEnd(12)} ${acc.username.padEnd(8)} pw ${acc.password}${acc.vehicleType ? `  ${acc.vehicleType} x${acc.capacity}` : ""}`);
+      console.log(`created  ${acc.role.padEnd(12)} ${acc.username.padEnd(8)} pw ${password}${acc.vehicleType ? `  ${acc.vehicleType} x${acc.capacity}` : ""}`);
     } catch (err) {
       if (err.code === 409) {
         console.log(`exists   ${acc.role.padEnd(12)} ${acc.username}`);

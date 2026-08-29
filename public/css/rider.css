@@ -1,0 +1,312 @@
+/* =========================================================
+   WASILI RIDER PORTAL
+   Rider-specific layout and styling
+   Shared styles come from css/style.css
+   ========================================================= */
+
+:root {
+    --white: #171d1a;
+}
+
+body {
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--gray-700);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.brand h1 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--green-400);
+}
+
+.brand span {
+    display: block;
+    margin-top: 3px;
+    font-size: 0.72rem;
+    color: var(--gray-500);
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-6);
+}
+
+.nav-link {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--gray-600);
+    padding: 11px 12px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-align: left;
+    transition: var(--transition);
+}
+
+.nav-link:hover {
+    background: rgba(34, 197, 94, 0.08);
+    color: var(--text-primary);
+}
+
+.nav-link.active {
+    background: var(--green-dark);
+    color: #ffffff;
+    border-color: rgba(34, 197, 94, 0.15);
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--gray-200);
+}
+
+.staff-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.staff-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--green-100);
+    color: var(--green-700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.staff-info strong {
+    display: block;
+    color: var(--gray-800);
+    font-size: 0.85rem;
+}
+
+.staff-info span {
+    display: block;
+    margin-top: 3px;
+    color: var(--gray-500);
+    font-size: 0.7rem;
+}
+
+.topbar h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--gray-700);
+}
+
+.topbar p {
+    margin: 4px 0 0;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+.page-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+.page-heading h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    color: var(--gray-900);
+}
+
+.page-heading p {
+    margin: 6px 0 0;
+    color: var(--gray-500);
+    font-size: 0.85rem;
+}
+
+.card,
+.stat-card,
+.delivery-request-card,
+.rider-card,
+.assignment-card,
+.form-section-card,
+.delivery-item {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-primary);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.card-title {
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--gray-900);
+}
+
+.card-subtitle {
+    margin: 5px 0 0;
+    color: var(--gray-500);
+    font-size: 0.8rem;
+}
+
+.stat-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.stat-label {
+    color: var(--gray-500);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.stat-value {
+    color: var(--gray-900);
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-top: 12px;
+}
+
+.stat-description {
+    display: block;
+    margin-top: var(--space-2);
+    color: var(--gray-500);
+    font-size: 0.72rem;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 16px 20px;
+    text-align: left;
+    border-bottom: 1px solid var(--card-border);
+    font-family: 'Lato', sans-serif;
+    font-size: 14px;
+}
+
+.data-table th {
+    background: #121815;
+    color: var(--gray-500);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.data-table td {
+    color: var(--gray-700);
+}
+
+.data-table tbody tr:hover {
+    background: #1b221f;
+}
+
+.rider-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.rider-status::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gray-400);
+}
+
+.rider-status.available::before { background: var(--success); }
+.rider-status.at-capacity::before { background: var(--warning); }
+.rider-status.offline::before { background: var(--gray-400); }
+.rider-status.unavailable::before { background: var(--danger); }
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+    margin-top: var(--space-5);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--gray-200);
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-label {
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.detail-value {
+    color: var(--gray-900);
+    font-weight: 600;
+}
+
+.capacity-text {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    color: var(--gray-600);
+    font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+    .page-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+}

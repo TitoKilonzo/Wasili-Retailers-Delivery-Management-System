@@ -5,7 +5,8 @@
   "main": "scripts/setup.js",
   "scripts": {
     "setup": "node scripts/setup.js",
-    "test": "node scripts/test-domain.js"
+    "test": "node scripts/test-domain.js",
+    "serve": "npx serve public"
   },
   "author": "Veltrix Technologies",
   "license": "UNLICENSED",

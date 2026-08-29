@@ -1,0 +1,178 @@
+/* =========================================================
+   WASILI SIGN-IN PAGE
+   Shared styles come from css/style.css
+   ========================================================= */
+
+body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+}
+
+.login-shell {
+    width: 100%;
+    max-width: 980px;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: var(--space-10);
+    align-items: center;
+}
+
+/* ---------- Hero side ---------- */
+
+.login-hero {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.login-hero img {
+    width: 100%;
+    max-width: 420px;
+    border-radius: var(--radius-lg);
+}
+
+.login-hero-text h2 {
+    margin: 0 0 var(--space-2);
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    line-height: 1.3;
+    color: var(--text-primary);
+}
+
+.login-hero-text p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    max-width: 380px;
+}
+
+/* ---------- Form side ---------- */
+
+.login-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-8);
+}
+
+.login-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-8);
+}
+
+.login-brand img {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+}
+
+.login-brand h1 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--text-primary);
+}
+
+.login-brand p {
+    margin: 2px 0 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.login-form .form-group {
+    margin-bottom: var(--space-5);
+}
+
+.login-form label {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.login-form .btn {
+    width: 100%;
+    justify-content: center;
+    margin-top: var(--space-2);
+}
+
+.login-form .btn[disabled] {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.login-roles {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-6);
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--card-border);
+}
+
+.login-role {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.login-role svg {
+    color: var(--green-500);
+}
+
+.login-error,
+.login-info {
+    display: none;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-5);
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.login-error.show,
+.login-info.show {
+    display: flex;
+}
+
+.login-error {
+    background: var(--danger-bg);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.login-info {
+    background: var(--info-bg);
+    color: #93c5fd;
+    border: 1px solid rgba(96, 165, 250, 0.35);
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: var(--space-6);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Stack on narrow screens - hero above form */
+@media (max-width: 800px) {
+    .login-shell {
+        grid-template-columns: 1fr;
+        max-width: 440px;
+    }
+
+    .login-hero {
+        display: none;
+    }
+}
