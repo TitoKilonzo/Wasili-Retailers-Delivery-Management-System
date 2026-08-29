@@ -46,8 +46,8 @@ module.exports = async ({ req, res, error }) => {
 
   try {
     const caller = await users.get({ userId: callerId });
-    if (!caller.labels.includes("dispatcher")) {
-      return res.json({ error: "Only Dispatcher accounts can assign riders" }, 403);
+    if (!caller.labels.includes("dispatcher") && !caller.labels.includes("admin")) {
+      return res.json({ error: "Only Dispatcher or Admin accounts can assign riders" }, 403);
     }
 
     const { deliveryId, riderId } = req.bodyJson || {};
@@ -79,8 +79,9 @@ module.exports = async ({ req, res, error }) => {
     }
 
     const now = new Date().toISOString();
+    const callerIsAdmin = caller.labels.includes("admin");
     const history = JSON.parse(delivery.history || "[]");
-    history.push({ status: "ASSIGNED", at: now, byUserId: callerId, byRole: "dispatcher", note: isReassign ? `reassigned to ${rider.name}` : `assigned to ${rider.name}` });
+    history.push({ status: "ASSIGNED", at: now, byUserId: callerId, byRole: callerIsAdmin ? "admin" : "dispatcher", note: isReassign ? `reassigned to ${rider.name}` : `assigned to ${rider.name}` });
 
     const updated = await tablesDB.updateRow({
       databaseId: DATABASE_ID,

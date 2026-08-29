@@ -24,8 +24,9 @@ module.exports = async ({ req, res, error }) => {
     const caller = await users.get({ userId: callerId });
     const isDispatcher = caller.labels.includes("dispatcher");
     const isRetailerStaff = caller.labels.includes("retailerstaff");
-    if (!isDispatcher && !isRetailerStaff) {
-      return res.json({ error: "Only Dispatcher or RetailerStaff accounts can cancel a delivery" }, 403);
+    const isAdmin = caller.labels.includes("admin");
+    if (!isDispatcher && !isRetailerStaff && !isAdmin) {
+      return res.json({ error: "Only Dispatcher, Admin, or RetailerStaff accounts can cancel a delivery" }, 403);
     }
 
     const { deliveryId, reason } = req.bodyJson || {};
@@ -35,7 +36,7 @@ module.exports = async ({ req, res, error }) => {
     if (delivery.deliveryStatus === "DELIVERED" || delivery.deliveryStatus === "CANCELLED") {
       return res.json({ error: `Cannot cancel a delivery that is already ${delivery.deliveryStatus}` }, 409);
     }
-    if (isRetailerStaff && !isDispatcher) {
+    if (isRetailerStaff && !isDispatcher && !isAdmin) {
       if (delivery.retailerStaffId !== callerId) return res.json({ error: "You can only cancel your own requests" }, 403);
       if (delivery.deliveryStatus !== "OPEN") {
         return res.json({ error: "Once a rider is assigned, ask a dispatcher to cancel" }, 409);
@@ -56,7 +57,7 @@ module.exports = async ({ req, res, error }) => {
     }
 
     const history = JSON.parse(delivery.history || "[]");
-    history.push({ status: "CANCELLED", at: new Date().toISOString(), byUserId: callerId, byRole: isDispatcher ? "dispatcher" : "retailerstaff", note: reason || undefined });
+    history.push({ status: "CANCELLED", at: new Date().toISOString(), byUserId: callerId, byRole: isAdmin ? "admin" : (isDispatcher ? "dispatcher" : "retailerstaff"), note: reason || undefined });
 
     // Set permissions explicitly on every write rather than relying on
     // whatever was already on the row - keeps dispatcher/retailer/rider

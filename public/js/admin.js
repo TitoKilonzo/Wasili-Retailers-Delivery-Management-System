@@ -4,6 +4,20 @@ const adminSession = Wasili.requireRole("admin");
 
 let riders = [];
 let deliveries = [];
+let recordSearchTerm = "";
+let recordStatusFilterValue = "";
+
+// Background polling and Realtime events firing off-screen shouldn't pop
+// a blocking alert() every time they hit the same error - once is a
+// notification, repeatedly forever is spam that locks up the tab.
+let lastAdminErrorShown = null;
+
+function showAdminError(message) {
+    console.error(message);
+    if (message === lastAdminErrorShown) return;
+    lastAdminErrorShown = message;
+    alert(message);
+}
 
 const sectionTitles = {
     dashboard: {
@@ -146,10 +160,34 @@ async function refreshData() {
         }));
 
         renderAll();
+        lastAdminErrorShown = null;
     } catch (err) {
         console.error("Admin refresh failed:", err);
-        alert("Could not load admin data: " + err.message);
+        showAdminError("Could not load admin data: " + err.message);
     }
+}
+
+// =========================================================
+// SHARED HELPERS (vehicle compatibility, capacity, operational status)
+// Same rules the dispatcher portal enforces client-side as a UX
+// convenience - the assign-delivery Function is still the source of
+// truth and re-checks all of this server-side.
+// =========================================================
+
+const VEHICLE_TIER = ["BICYCLE", "MOTORCYCLE", "CAR", "VAN", "TRUCK"];
+
+function getRemainingCapacity(rider) {
+    return Math.max(0, rider.capacity - rider.activeDeliveries);
+}
+
+function isRiderOperational(rider) {
+    return rider.riderStatus === "AVAILABLE" || rider.riderStatus === "AT_CAPACITY";
+}
+
+function isVehicleCompatible(delivery, rider) {
+    const r = VEHICLE_TIER.indexOf(rider.vehicleType);
+    const req = VEHICLE_TIER.indexOf(delivery.requiredVehicleType);
+    return r !== -1 && req !== -1 && r >= req;
 }
 
 function renderDashboard() {
@@ -167,6 +205,33 @@ function renderDashboard() {
     ];
 
     summary.innerHTML = summaryItems.map((item) => `<div class="info-item"><strong>${item}</strong></div>`).join("");
+
+    renderFleetBreakdown();
+}
+
+function renderFleetBreakdown() {
+    const container = document.getElementById("fleetBreakdown");
+    if (!container) return;
+
+    const rows = VEHICLE_TIER.map((vehicleType) => {
+        const fleet = riders.filter((r) => r.vehicleType === vehicleType);
+        if (fleet.length === 0) return null;
+        const freeSlots = fleet.reduce((sum, r) => sum + getRemainingCapacity(r), 0);
+        const operational = fleet.filter(isRiderOperational).length;
+        return { vehicleType, count: fleet.length, operational, freeSlots };
+    }).filter(Boolean);
+
+    if (rows.length === 0) {
+        container.innerHTML = '<div class="info-item"><strong>No riders seeded yet.</strong></div>';
+        return;
+    }
+
+    container.innerHTML = rows.map((row) => `
+        <div class="info-item">
+            <strong>${formatVehicle(row.vehicleType)}</strong>
+            <span>${row.operational}/${row.count} operational &middot; ${row.freeSlots} slot${row.freeSlots === 1 ? "" : "s"} free</span>
+        </div>
+    `).join("");
 }
 
 function renderUsers() {
@@ -265,8 +330,40 @@ function renderRecords() {
     const tableBody = document.getElementById("recordTableBody");
     if (!tableBody) return;
 
-    tableBody.innerHTML = deliveries.map((delivery) => {
+    const term = recordSearchTerm.trim().toLowerCase();
+
+    const filtered = deliveries.filter((delivery) => {
+        if (recordStatusFilterValue && delivery.deliveryStatus !== recordStatusFilterValue) return false;
+        if (!term) return true;
         const rider = riders.find((entry) => entry.riderId === delivery.riderId);
+        const haystack = [
+            delivery.customerName,
+            delivery.destination,
+            rider ? rider.name : ""
+        ].join(" ").toLowerCase();
+        return haystack.includes(term);
+    });
+
+    if (filtered.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">No matching deliveries.</td></tr>`;
+        return;
+    }
+
+    tableBody.innerHTML = filtered.map((delivery) => {
+        const rider = riders.find((entry) => entry.riderId === delivery.riderId);
+        const isTerminal = delivery.deliveryStatus === "DELIVERED" || delivery.deliveryStatus === "CANCELLED";
+        const canAssign = !isTerminal;
+        const assignLabel = delivery.deliveryStatus === "OPEN" ? "Assign" : "Reassign";
+
+        const actions = isTerminal
+            ? `<span style="color: var(--text-muted); font-size: 0.8rem;">&mdash;</span>`
+            : `
+                <div class="admin-row-actions">
+                    ${canAssign ? `<button class="btn btn-secondary" data-action="assign" data-id="${delivery.deliveryId}">${assignLabel}</button>` : ""}
+                    <button class="btn btn-danger" data-action="cancel" data-id="${delivery.deliveryId}">Cancel</button>
+                </div>
+            `;
+
         return `
             <tr>
                 <td>${delivery.deliveryId}</td>
@@ -275,9 +372,135 @@ function renderRecords() {
                 <td>${formatVehicle(delivery.requiredVehicleType)}</td>
                 <td>${rider ? rider.name : "Unassigned"}</td>
                 <td><span class="status-badge ${getStatusClass(delivery.deliveryStatus)}">${formatStatus(delivery.deliveryStatus)}</span></td>
+                <td>${actions}</td>
             </tr>
         `;
     }).join("");
+
+    tableBody.querySelectorAll("[data-action='assign']").forEach((button) => {
+        button.addEventListener("click", () => openRiderModalForDelivery(button.dataset.id));
+    });
+    tableBody.querySelectorAll("[data-action='cancel']").forEach((button) => {
+        button.addEventListener("click", () => cancelDeliveryAction(button.dataset.id));
+    });
+}
+
+const recordSearchInput = document.getElementById("recordSearch");
+if (recordSearchInput) {
+    recordSearchInput.addEventListener("input", (e) => {
+        recordSearchTerm = e.target.value;
+        renderRecords();
+    });
+}
+
+const recordStatusFilter = document.getElementById("recordStatusFilter");
+if (recordStatusFilter) {
+    recordStatusFilter.addEventListener("change", (e) => {
+        recordStatusFilterValue = e.target.value;
+        renderRecords();
+    });
+}
+
+// =========================================================
+// ASSIGN / REASSIGN RIDER MODAL
+// Same pattern as the dispatcher portal: a clickable list of every
+// currently compatible rider instead of a raw ID prompt.
+// =========================================================
+
+const riderModalOverlay = document.getElementById("riderModalOverlay");
+const riderModalList = document.getElementById("riderModalList");
+const riderModalSubtitle = document.getElementById("riderModalSubtitle");
+const riderModalClose = document.getElementById("riderModalClose");
+
+function openRiderModalForDelivery(deliveryId) {
+    const delivery = deliveries.find((item) => item.deliveryId === deliveryId);
+    if (!delivery) return;
+
+    const compatibleRiders = riders.filter(
+        (rider) =>
+            isRiderOperational(rider) &&
+            isVehicleCompatible(delivery, rider) &&
+            rider.riderId !== delivery.riderId
+    );
+
+    openRiderModal(delivery, compatibleRiders);
+}
+
+function openRiderModal(delivery, compatibleRiders) {
+    if (!riderModalOverlay) return;
+
+    riderModalSubtitle.textContent =
+        `${delivery.customerName} - ${formatVehicle(delivery.requiredVehicleType)} required`;
+
+    riderModalList.innerHTML = "";
+
+    if (compatibleRiders.length === 0) {
+        riderModalList.innerHTML =
+            `<div class="rider-modal-empty">No suitable rider is currently available for this delivery.</div>`;
+    } else {
+        compatibleRiders
+            .slice()
+            .sort((a, b) => getRemainingCapacity(b) - getRemainingCapacity(a))
+            .forEach((rider) => {
+                const option = document.createElement("button");
+                option.type = "button";
+                option.className = "rider-modal-option";
+                option.innerHTML = `
+                    <div>
+                        <div class="rider-modal-option-name">${rider.name}</div>
+                        <div class="rider-modal-option-meta">
+                            ${formatVehicle(rider.vehicleType)} &middot; ${rider.phone}
+                        </div>
+                    </div>
+                    <div class="rider-modal-option-slots">
+                        ${getRemainingCapacity(rider)} slot${getRemainingCapacity(rider) === 1 ? "" : "s"} free
+                    </div>
+                `;
+                option.addEventListener("click", () => confirmAssignRider(delivery, rider));
+                riderModalList.appendChild(option);
+            });
+    }
+
+    riderModalOverlay.classList.add("open");
+}
+
+function closeRiderModal() {
+    if (riderModalOverlay) riderModalOverlay.classList.remove("open");
+}
+
+async function confirmAssignRider(delivery, rider) {
+    closeRiderModal();
+    try {
+        await Wasili.assignDelivery(delivery.deliveryId, rider.riderId);
+        await refreshData();
+        alert(`${delivery.deliveryId} has been assigned to ${rider.name}.`);
+    } catch (err) {
+        showAdminError("Could not assign this delivery: " + err.message);
+    }
+}
+
+if (riderModalClose) riderModalClose.addEventListener("click", closeRiderModal);
+if (riderModalOverlay) {
+    riderModalOverlay.addEventListener("click", (e) => {
+        if (e.target === riderModalOverlay) closeRiderModal();
+    });
+}
+
+// =========================================================
+// CANCEL DELIVERY
+// =========================================================
+
+async function cancelDeliveryAction(deliveryId) {
+    if (!confirm("Cancel this delivery? This can't be undone.")) return;
+
+    const reason = prompt("Reason for cancelling (optional):") || "";
+
+    try {
+        await Wasili.cancelDelivery(deliveryId, reason.trim() || undefined);
+        await refreshData();
+    } catch (err) {
+        showAdminError("Could not cancel this delivery: " + err.message);
+    }
 }
 
 function renderActivity() {
@@ -312,6 +535,17 @@ function renderAll() {
 updateAdminProfile();
 renderAll();
 refreshData();
+
+// Live sync so the admin dashboard reflects retailer/dispatcher/rider
+// activity as it happens, plus a low-cost polling fallback in case a
+// Realtime event is ever dropped (network blip, reconnect gap).
+if (typeof Wasili.onDeliveryChange === "function") {
+    Wasili.onDeliveryChange(() => refreshData());
+}
+if (typeof Wasili.onRiderChange === "function") {
+    Wasili.onRiderChange(() => refreshData());
+}
+setInterval(() => refreshData(), 30000);
 
 const logoutButton = document.getElementById("logoutButton");
 if (logoutButton) {
