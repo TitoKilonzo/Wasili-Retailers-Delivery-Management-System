@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wasili | Dispatcher Portal</title>
+    <link rel="stylesheet" href="css/dispatcher.css">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <aside class="sidebar">
+
+            <div class="brand">
+                <div class="brand-mark">W</div>
+
+                <div class="brand-text">
+                    <h1>Wasili</h1>
+                    <span>Dispatcher Portal</span>
+                </div>
+            </div>
+
+            <nav class="navigation">
+
+                <button class="nav-item active" data-section="dashboard">
+                    <span>◆</span>
+                    <span>Dashboard</span>
+                </button>
+
+                <button class="nav-item" data-section="requests">
+                    <span>▣</span>
+                    <span>Delivery Requests</span>
+                </button>
+
+                <button class="nav-item" data-section="riders">
+                    <span>♙</span>
+                    <span>Riders</span>
+                </button>
+
+                <button class="nav-item" data-section="assignments">
+                    <span>⇄</span>
+                    <span>Assignments</span>
+                </button>
+
+            </nav>
+
+            <div class="sidebar-bottom">
+
+                <div class="dispatcher-profile">
+
+                    <div class="avatar">DS</div>
+
+                    <div>
+                        <strong>Dispatcher</strong>
+                        <small>Wasili Operations</small>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <main class="main">
+
+            <header class="topbar">
+
+                <div>
+                    <p class="eyebrow">WASILI OPERATIONS</p>
+
+                    <h2 id="page-title">Dashboard</h2>
+
+                    <p id="page-description">
+                        Manage delivery requests, riders and assignments.
+                    </p>
+                </div>
+
+                <div class="topbar-status">
+                    <span class="status-dot"></span>
+                    System Online
+                </div>
+
+            </header>
+
+
+            <div class="content">
+
+                <!-- DASHBOARD -->
+
+                <section class="portal-section active" id="dashboard">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <h3>Dispatch Overview</h3>
+
+                            <p>
+                                Monitor deliveries and rider availability.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    <div class="stats-grid">
+
+                        <article class="stat-card">
+
+                            <div class="stat-header">
+                                <span>Open Deliveries</span>
+                                <span class="stat-icon">↗</span>
+                            </div>
+
+                            <strong id="open-deliveries">0</strong>
+
+                            <small>Waiting for assignment</small>
+
+                        </article>
+
+
+                        <article class="stat-card">
+
+                            <div class="stat-header">
+                                <span>Assigned</span>
+                                <span class="stat-icon">⇄</span>
+                            </div>
+
+                            <strong id="assigned-deliveries">0</strong>
+
+                            <small>Currently assigned</small>
+
+                        </article>
+
+
+                        <article class="stat-card">
+
+                            <div class="stat-header">
+                                <span>Available Riders</span>
+                                <span class="stat-icon">♙</span>
+                            </div>
+
+                            <strong id="available-riders">0</strong>
+
+                            <small>Ready for assignment</small>
+
+                        </article>
+
+
+                        <article class="stat-card">
+
+                            <div class="stat-header">
+                                <span>At Capacity</span>
+                                <span class="stat-icon warning">!</span>
+                            </div>
+
+                            <strong id="capacity-riders">0</strong>
+
+                            <small>No remaining capacity</small>
+
+                        </article>
+
+                    </div>
+
+
+                    <article class="panel">
+
+                        <div class="panel-header">
+
+                            <div>
+                                <h3>Delivery Requests</h3>
+
+                                <p>
+                                    Recent requests waiting for dispatch.
+                                </p>
+                            </div>
+
+                            <button
+                                class="secondary-button"
+                                data-navigate="requests">
+                                View All
+                            </button>
+
+                        </div>
+
+
+                        <div class="table-container">
+
+                            <table>
+
+                                <thead>
+                                    <tr>
+                                        <th>Delivery ID</th>
+                                        <th>Customer</th>
+                                        <th>Destination</th>
+                                        <th>Vehicle</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="requests-table">
+
+                                    <tr>
+                                        <td colspan="6" class="empty">
+                                            No delivery requests yet.
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </article>
+
+
+                    <article class="panel">
+
+                        <div class="panel-header">
+
+                            <div>
+                                <h3>Rider Availability</h3>
+
+                                <p>
+                                    Current rider status and capacity.
+                                </p>
+                            </div>
+
+                            <button
+                                class="secondary-button"
+                                data-navigate="riders">
+                                View Riders
+                            </button>
+
+                        </div>
+
+
+                        <div class="table-container">
+
+                            <table>
+
+                                <thead>
+                                    <tr>
+                                        <th>Rider</th>
+                                        <th>Status</th>
+                                        <th>Vehicle</th>
+                                        <th>Capacity</th>
+                                        <th>Active</th>
+                                        <th>Remaining</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="riders-table">
+
+                                    <tr>
+                                        <td colspan="6" class="empty">
+                                            No rider data available.
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </article>
+
+                </section>
+
+
+                <!-- DELIVERY REQUESTS -->
+
+                <section class="portal-section" id="requests">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <h3>Delivery Requests</h3>
+
+                            <p>
+                                Review incoming deliveries and assign riders.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    <div class="request-list" id="request-list">
+
+                        <div class="empty-panel">
+                            No delivery requests available.
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- RIDERS -->
+
+                <section class="portal-section" id="riders">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <h3>Riders</h3>
+
+                            <p>
+                                Monitor rider availability and delivery capacity.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    <div class="rider-list" id="rider-list">
+
+                        <div class="empty-panel">
+                            No riders available.
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- ASSIGNMENTS -->
+
+                <section class="portal-section" id="assignments">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <h3>Assignments</h3>
+
+                            <p>
+                                Monitor active delivery assignments.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    <div class="assignment-list" id="assignment-list">
+
+                        <div class="empty-panel">
+                            No active assignments.
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <script src="js/dispatcher.js"></script>
+
+</body>
+</html>
