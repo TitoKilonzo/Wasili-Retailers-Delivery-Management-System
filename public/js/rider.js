@@ -2,51 +2,77 @@
 
 // =========================================================
 // WASILI RIDER PORTAL
-// Rider-specific frontend prototype using temporary mock data
+// Backed live by Appwrite (see js/wasili-client.js). currentRider and
+// assignments are loaded from TablesDB - assignments is only ever
+// replaced wholesale by refreshData(), never mutated on a guess, so the
+// UI can't drift from what the server actually has recorded.
 // =========================================================
 
-// =========================================================
-// TEMPORARY MOCK RIDER
-// =========================================================
+const riderSession = Wasili.requireRole("rider");
 
-const currentRider = {
-    riderId: "RDR-001",
-    name: "Kevin Mwangi",
-    phone: "0711 222 333",
-    vehicleType: "MOTORCYCLE",
+let currentRider = {
+    riderId: riderSession ? riderSession.id : null,
+    name: riderSession ? riderSession.name : "",
+    phone: "",
+    vehicleType: "",
+    capacity: 0,
+    activeDeliveries: 0,
     riderStatus: "AVAILABLE"
 };
 
-// =========================================================
-// TEMPORARY MOCK DELIVERY ASSIGNMENTS
-// =========================================================
+let assignments = [];
 
-let assignments = [
-    {
-        deliveryId: "DL-101",
-        customerName: "Jane Wanjiku",
-        customerPhone: "0712 345 678",
-        destination: "Westlands, Nairobi",
-        landmark: "Near Sarit Centre",
-        itemDescription: "Small electronics package",
-        vehicleType: "MOTORCYCLE",
-        deliveryStatus: "ASSIGNED",
-        riderId: "RDR-001",
+// Row field names from TablesDB (address/requiredVehicleType/etc.) don't
+// match this file's original mock shape (destination/vehicleType) - this
+// mapper bridges that gap so the render functions below didn't need a
+// rewrite.
+function mapDeliveryRow(row) {
+    return {
+        deliveryId: row.$id,
+        customerName: row.customerName,
+        customerPhone: row.customerPhone,
+        destination: row.address,
+        landmark: row.landmark || "",
+        itemDescription: row.itemDescription,
+        vehicleType: row.requiredVehicleType,
+        deliveryStatus: row.deliveryStatus,
+        riderId: row.riderId || null,
         confirmation: null
-    },
-    {
-        deliveryId: "DL-102",
-        customerName: "Peter Kamau",
-        customerPhone: "0798 456 123",
-        destination: "Kilimani, Nairobi",
-        landmark: "Yaya Centre",
-        itemDescription: "Documents and small package",
-        vehicleType: "MOTORCYCLE",
-        deliveryStatus: "ACCEPTED",
-        riderId: "RDR-001",
-        confirmation: null
+    };
+}
+
+function showRiderError(message) {
+    console.error(message);
+    alert(message);
+}
+
+async function refreshData() {
+    if (!riderSession) return;
+
+    try {
+        const [riderRow, deliveryRows] = await Promise.all([
+            Wasili.getRider(riderSession.id),
+            Wasili.listDeliveries([Wasili.Query.equal("riderId", riderSession.id)])
+        ]);
+
+        currentRider = {
+            riderId: riderRow.$id,
+            name: riderRow.name,
+            phone: riderRow.phone,
+            vehicleType: riderRow.vehicleType,
+            capacity: riderRow.capacity,
+            activeDeliveries: riderRow.activeDeliveries,
+            riderStatus: riderRow.riderStatus
+        };
+
+        assignments = deliveryRows.map(mapDeliveryRow);
+
+        renderAll();
+    } catch (err) {
+        console.error("Failed to load rider data:", err);
+        showRiderError("Could not load your assignments from the server: " + err.message);
     }
-];
+}
 
 // =========================================================
 // STATUS FORMATTING
@@ -174,16 +200,44 @@ if (menuToggle) {
 function renderRiderProfile() {
     const nameElement = document.getElementById("riderName");
     const avatarElement = document.getElementById("riderAvatar");
+    const statusLabelElement = document.getElementById("riderStatusLabel");
 
-    if (nameElement) {
+    if (nameElement && currentRider.name) {
         nameElement.textContent = currentRider.name;
     }
 
-    if (avatarElement) {
+    if (avatarElement && currentRider.name) {
         avatarElement.textContent = currentRider.name
             .split(" ")
             .map((name) => name[0])
             .join("");
+    }
+
+    if (statusLabelElement) {
+        statusLabelElement.textContent = currentRider.riderStatus
+            ? currentRider.riderStatus.replace("_", " ")
+            : "Rider";
+    }
+}
+
+// =========================================================
+// AVAILABILITY TOGGLE
+// =========================================================
+// Contract sec 6: OFFLINE/UNAVAILABLE are set manually by the rider and
+// always win over the system-computed AVAILABLE/AT_CAPACITY - this is a
+// straight ownership write, no Function needed (see wasili-client.js).
+
+async function toggleAvailability() {
+    if (!currentRider.riderId) return;
+
+    const goingOffline = currentRider.riderStatus !== "OFFLINE";
+    const nextStatus = goingOffline ? "OFFLINE" : "AVAILABLE";
+
+    try {
+        await Wasili.updateOwnRiderStatus(currentRider.riderId, nextStatus);
+        await refreshData();
+    } catch (err) {
+        showRiderError("Could not update your availability: " + err.message);
     }
 }
 
@@ -205,20 +259,27 @@ function renderStatistics() {
         return delivery.deliveryStatus === "DELIVERED";
     });
 
-    const assignedElement = document.getElementById("assignedDeliveries");
-    const activeElement = document.getElementById("activeDeliveries");
-    const completedElement = document.getElementById("completedDeliveries");
+    const assignedElement = document.getElementById("assignedCount");
+    const activeElement = document.getElementById("inProgressCount");
+    const completedElement = document.getElementById("completedCount");
+    const capacityElement = document.getElementById("capacityValue");
 
     if (assignedElement) {
-        assignedElement.textContent = assignments.length;
+        assignedElement.textContent = activeAssignments.length;
     }
 
     if (activeElement) {
-        activeElement.textContent = activeAssignments.length;
+        activeElement.textContent = activeAssignments.filter(
+            (delivery) => delivery.deliveryStatus !== "ASSIGNED"
+        ).length;
     }
 
     if (completedElement) {
         completedElement.textContent = completedDeliveries.length;
+    }
+
+    if (capacityElement) {
+        capacityElement.textContent = `${currentRider.activeDeliveries || 0} / ${currentRider.capacity || 0}`;
     }
 }
 
@@ -253,7 +314,7 @@ function getNextAction(status) {
 // UPDATE DELIVERY STATUS
 // =========================================================
 
-function updateDeliveryStatus(deliveryId, nextStatus) {
+async function updateDeliveryStatus(deliveryId, nextStatus) {
     const delivery = assignments.find(
         (item) => item.deliveryId === deliveryId
     );
@@ -262,40 +323,50 @@ function updateDeliveryStatus(deliveryId, nextStatus) {
         return;
     }
 
-    const validNextAction = getNextAction(delivery.deliveryStatus);
+    try {
+        if (nextStatus === "ACCEPTED") {
+            await Wasili.acceptAssignment(deliveryId);
+        } else if (nextStatus === "DELIVERED") {
+            // DELIVERED needs the customer's confirmation code, checked
+            // server-side against a table no client role can read (see
+            // functions/confirm-delivery) - this is what makes "the rider
+            // has to actually ask the customer" a real guarantee.
+            const code = prompt("Enter the customer's confirmation code:");
 
-    if (!validNextAction) {
-        alert("No further action is available for this delivery.");
-        return;
-    }
+            if (!code || !code.trim()) {
+                alert("A confirmation code is required to mark this delivery as delivered.");
+                return;
+            }
 
-    if (validNextAction.nextStatus !== nextStatus) {
-        alert("Invalid delivery status transition.");
-        return;
-    }
-
-    if (nextStatus === "DELIVERED") {
-        const confirmation = prompt(
-            "Enter delivery confirmation:"
-        );
-
-        if (!confirmation || !confirmation.trim()) {
-            alert(
-                "Delivery confirmation is required before marking the delivery as delivered."
-            );
-            return;
+            await Wasili.confirmDelivery(deliveryId, code.trim());
+        } else {
+            await Wasili.advanceStatus(deliveryId, nextStatus);
         }
 
-        delivery.confirmation = confirmation.trim();
+        await refreshData();
+
+        alert(`${deliveryId} is now ${formatDeliveryStatus(nextStatus)}.`);
+    } catch (err) {
+        showRiderError(`Could not update ${deliveryId}: ${err.message}`);
     }
+}
 
-    delivery.deliveryStatus = nextStatus;
+// =========================================================
+// REJECT ASSIGNMENT
+// =========================================================
+// Contract sec 10: a rider rejecting/unavailable sends the delivery back
+// to the dispatcher for reassignment, rather than blocking the rider.
 
-    renderAll();
+async function rejectDelivery(deliveryId) {
+    const reason = prompt("Reason for rejecting this assignment (optional):") || "";
 
-    alert(
-        `${delivery.deliveryId} is now ${formatDeliveryStatus(nextStatus)}.`
-    );
+    try {
+        await Wasili.rejectAssignment(deliveryId, reason.trim() || undefined);
+        await refreshData();
+        alert(`${deliveryId} has been returned to the dispatcher.`);
+    } catch (err) {
+        showRiderError(`Could not reject ${deliveryId}: ${err.message}`);
+    }
 }
 
 // =========================================================
@@ -390,9 +461,9 @@ function renderAssignments() {
 
             </div>
 
-            ${action
+            <div class="card-actions">
+                ${action
                 ? `
-                <div class="card-actions">
                     <button
                         class="btn btn-primary rider-action-btn"
                         data-id="${delivery.deliveryId}"
@@ -400,10 +471,21 @@ function renderAssignments() {
                     >
                         ${action.label}
                     </button>
-                </div>
-            `
+                `
                 : ""
             }
+                ${delivery.deliveryStatus === "ASSIGNED"
+                ? `
+                    <button
+                        class="btn btn-secondary rider-reject-btn"
+                        data-id="${delivery.deliveryId}"
+                    >
+                        Reject
+                    </button>
+                `
+                : ""
+            }
+            </div>
         `;
 
         container.appendChild(card);
@@ -417,7 +499,7 @@ function renderAssignments() {
 // =========================================================
 
 function renderHistory() {
-    const container = document.getElementById("historyList");
+    const container = document.getElementById("completedList");
 
     if (!container) {
         return;
@@ -522,6 +604,65 @@ function addActionListeners() {
             );
         });
     });
+
+    const rejectButtons = document.querySelectorAll(".rider-reject-btn");
+
+    rejectButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            rejectDelivery(button.dataset.id);
+        });
+    });
+}
+
+// =========================================================
+// DASHBOARD ASSIGNMENT PREVIEW
+// =========================================================
+
+function renderDashboardPreview() {
+    const container = document.getElementById("dashboardAssignments");
+
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = "";
+
+    const activeAssignments = assignments
+        .filter((delivery) => [
+            "ASSIGNED",
+            "ACCEPTED",
+            "PICKED_UP",
+            "OUT_FOR_DELIVERY"
+        ].includes(delivery.deliveryStatus))
+        .slice(0, 3);
+
+    if (activeAssignments.length === 0) {
+        container.innerHTML = `
+            <div class="rider-empty">
+                No active assignments.
+            </div>
+        `;
+        return;
+    }
+
+    activeAssignments.forEach((delivery) => {
+        const card = document.createElement("div");
+        card.className = "assignment-card";
+        card.innerHTML = `
+            <div class="assignment-card-header">
+                <div>
+                    <h3>${delivery.deliveryId}</h3>
+                    <p class="assignment-meta">
+                        ${delivery.customerName} • ${delivery.destination}
+                    </p>
+                </div>
+                <span class="status-badge ${getDeliveryStatusClass(delivery.deliveryStatus)}">
+                    ${formatDeliveryStatus(delivery.deliveryStatus)}
+                </span>
+            </div>
+        `;
+        container.appendChild(card);
+    });
 }
 
 // =========================================================
@@ -531,12 +672,34 @@ function addActionListeners() {
 function renderAll() {
     renderRiderProfile();
     renderStatistics();
+    renderDashboardPreview();
     renderAssignments();
     renderHistory();
 }
 
 // =========================================================
-// INITIAL RENDER
+// AVAILABILITY / LOGOUT CONTROLS
+// =========================================================
+
+const availabilityButton = document.getElementById("availabilityToggle");
+
+if (availabilityButton) {
+    availabilityButton.addEventListener("click", toggleAvailability);
+}
+
+const logoutButton = document.getElementById("logoutButton");
+
+if (logoutButton) {
+    logoutButton.addEventListener("click", () => Wasili.logout());
+}
+
+// =========================================================
+// INITIAL RENDER & BACKEND INITIALIZATION
 // =========================================================
 
 renderAll();
+refreshData();
+
+if (typeof Wasili.onDeliveryChange === "function") {
+    Wasili.onDeliveryChange(() => refreshData());
+}

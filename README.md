@@ -105,6 +105,12 @@ the Appwrite Web SDK from a CDN and read `APPWRITE_ENDPOINT` /
 or a local `.env` either, so they hardcode the same values at the top of
 each `functions/*/src/main.js`. If you ever change databases, update all
 three places by hand; there's no shared config file they all read from.
+This build's constants already point at database id `reflex` (the
+`APPWRITE_DATABASE_ID` default) - if you set a different
+`APPWRITE_DATABASE_ID` in `.env` (e.g. because your Appwrite plan is at
+its database limit), update the `DATABASE_ID` constant in all of those
+files to match, or `npm run setup` and the app will be talking to two
+different databases.
 
 Fill in `.env` (endpoint, project ID, an API key with read+write on
 Databases/Tables, Columns/Attributes, Rows/Documents, and Users - Console

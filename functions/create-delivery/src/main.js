@@ -5,7 +5,7 @@
 
 const { Client, TablesDB, Users, ID, Permission, Role } = require("node-appwrite");
 
-const DATABASE_ID = "6a8f0d44001c63c5f21b";
+const DATABASE_ID = "reflex";
 const VEHICLE_TIER = ["BICYCLE", "MOTORCYCLE", "CAR", "VAN", "TRUCK"];
 
 function generateCode() {

@@ -1,77 +1,15 @@
 // ============================================================================
-// TEMPORARY IN-MEMORY MOCK DELIVERY DATA
+// BACKEND-BACKED DELIVERY DATA
 // ============================================================================
-// Note: This in-memory mock data is used for frontend UI presentation and prototyping.
-// Data modifications are local to the browser session and will reset on page refresh.
-// Full backend persistence is managed via Appwrite Functions (create-delivery,
-// cancel-delivery) and TablesDB via public/js/wasili-client.js in the integration phase.
+// Loaded from Appwrite TablesDB via public/js/wasili-client.js. Never
+// seeded or mutated locally - deliveries is only ever replaced wholesale
+// by syncWithBackend(), so the UI can't drift from what the server has
+// actually stored. Starts empty until the first sync completes.
 // ============================================================================
 
-let deliveries = [
-    {
-        id: "DL-001",
-        customerName: "Jane Wanjiku",
-        phone: "0712 345 678",
-        destination: "Westlands, Nairobi",
-        landmark: "Near Sarit Centre",
-        itemDescription: "Small electronics package",
-        vehicle: "Motorcycle",
-        notes: "Call customer before arrival",
-        status: "OUT_FOR_DELIVERY",
-        rider: {
-            name: "Kevin Mwangi",
-            phone: "0711 222 333",
-            vehicle: "Motorcycle"
-        }
-    },
+const retailerSession = Wasili.requireRole("retailerstaff");
 
-    {
-        id: "DL-002",
-        customerName: "Peter Kamau",
-        phone: "0798 456 123",
-        destination: "Kilimani, Nairobi",
-        landmark: "Yaya Centre",
-        itemDescription: "Documents and small package",
-        vehicle: "Bicycle",
-        notes: "",
-        status: "ASSIGNED",
-        rider: {
-            name: "Brian Otieno",
-            phone: "0700 555 888",
-            vehicle: "Bicycle"
-        }
-    },
-
-    {
-        id: "DL-003",
-        customerName: "Mary Njeri",
-        phone: "0722 987 654",
-        destination: "CBD, Nairobi",
-        landmark: "Near Kencom",
-        itemDescription: "Clothing package",
-        vehicle: "Car",
-        notes: "Fragile package",
-        status: "DELIVERED",
-        rider: {
-            name: "James Kariuki",
-            phone: "0715 111 222",
-            vehicle: "Car"
-        }
-    },
-
-    {
-        id: "DL-004",
-        customerName: "John Maina",
-        phone: "0701 333 999",
-        destination: "Ruiru",
-        landmark: "Near Ruiru Stadium",
-        itemDescription: "Hardware equipment",
-        vehicle: "Van",
-        notes: "",
-        status: "OPEN",
-        rider: null
-    }
-];
+let deliveries = [];
 
 
 // ========================================
@@ -687,38 +625,41 @@ function mapRowToDelivery(row, ridersMap = {}) {
 // BACKEND API INTEGRATION (WASILI CLIENT)
 // ========================================
 
-async function syncWithBackend() {
-    if (typeof Wasili !== "undefined" && typeof Wasili.listDeliveries === "function") {
-        try {
-            const [rows, riders] = await Promise.all([
-                Wasili.listDeliveries().catch(() => null),
-                typeof Wasili.listRiders === "function" ? Wasili.listRiders().catch(() => []) : Promise.resolve([])
-            ]);
+function showErrorMessage(message) {
+    console.error(message);
+    alert(message);
+}
 
-            if (rows && Array.isArray(rows) && rows.length > 0) {
-                const ridersMap = {};
-                (riders || []).forEach(r => {
-                    if (r && r.$id) ridersMap[r.$id] = r;
-                });
-                deliveries = rows.map(r => mapRowToDelivery(r, ridersMap));
-                renderAll();
-            }
-        } catch (err) {
-            console.warn("Backend sync notice:", err);
-        }
+async function syncWithBackend() {
+    try {
+        const [rows, riders] = await Promise.all([
+            Wasili.listDeliveries(),
+            Wasili.listRiders()
+        ]);
+
+        const ridersMap = {};
+        (riders || []).forEach(r => {
+            if (r && r.$id) ridersMap[r.$id] = r;
+        });
+
+        // Replace wholesale, including with an empty array - an empty
+        // result is real data (no deliveries yet), not a reason to keep
+        // stale data on screen.
+        deliveries = (rows || []).map(r => mapRowToDelivery(r, ridersMap));
+        renderAll();
+    } catch (err) {
+        console.error("Backend sync failed:", err);
+        showErrorMessage("Could not load your deliveries from the server: " + err.message);
     }
 }
 
 function updateStaffProfile() {
-    if (typeof Wasili !== "undefined" && typeof Wasili.getSession === "function") {
-        const session = Wasili.getSession();
-        if (session && session.name) {
-            const staffNameEl = document.querySelector(".staff-info strong");
-            const staffAvatarEl = document.querySelector(".staff-avatar");
-            if (staffNameEl) staffNameEl.textContent = session.name;
-            if (staffAvatarEl) {
-                staffAvatarEl.textContent = session.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
-            }
+    if (retailerSession && retailerSession.name) {
+        const staffNameEl = document.querySelector(".staff-info strong");
+        const staffAvatarEl = document.querySelector(".staff-avatar");
+        if (staffNameEl) staffNameEl.textContent = retailerSession.name;
+        if (staffAvatarEl) {
+            staffAvatarEl.textContent = retailerSession.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
         }
     }
 }
@@ -761,28 +702,13 @@ function addCancelListeners() {
 
             if (!confirmed) return;
 
-            // Connect to Wasili backend cancel-delivery function if available
-            if (typeof Wasili !== "undefined" && typeof Wasili.cancelDelivery === "function") {
-                try {
-                    await Wasili.cancelDelivery(deliveryId, "Cancelled by RetailerStaff");
-                    await syncWithBackend();
-                    showSuccessMessage(`${deliveryId} has been cancelled.`);
-                    return;
-                } catch (err) {
-                    console.warn("Backend cancellation failed, applying local update:", err.message);
-                }
+            try {
+                await Wasili.cancelDelivery(deliveryId, "Cancelled by RetailerStaff");
+                await syncWithBackend();
+                showSuccessMessage(`${deliveryId} has been cancelled.`);
+            } catch (err) {
+                showErrorMessage(`Could not cancel ${deliveryId}: ${err.message}`);
             }
-
-            // Fallback for local testing / offline state
-            delivery.status =
-                "CANCELLED";
-
-
-            renderAll();
-
-            showSuccessMessage(
-                `${deliveryId} has been cancelled.`
-            );
 
         });
 
@@ -852,87 +778,27 @@ document
         const cleanPhone = formatKenyanPhone(phone);
         const requiredVehicleType = vehicle.toUpperCase();
 
-        // Connect to Wasili backend create-delivery function if available
-        if (typeof Wasili !== "undefined" && typeof Wasili.createDelivery === "function") {
-            try {
-                const payload = {
-                    customerName,
-                    customerPhone: cleanPhone,
-                    address: destination + (landmark ? ` (Landmark: ${landmark})` : ""),
-                    itemDescription: itemDescription + (notes ? ` [Notes: ${notes}]` : ""),
-                    requiredVehicleType
-                };
+        try {
+            const payload = {
+                customerName,
+                customerPhone: cleanPhone,
+                address: destination + (landmark ? ` (Landmark: ${landmark})` : ""),
+                itemDescription: itemDescription + (notes ? ` [Notes: ${notes}]` : ""),
+                requiredVehicleType
+            };
 
-                const res = await Wasili.createDelivery(payload);
-                await syncWithBackend();
+            const res = await Wasili.createDelivery(payload);
+            await syncWithBackend();
 
-                this.reset();
-                showSection("dashboard");
+            this.reset();
+            showSection("dashboard");
 
-                const id = res?.$id || res?.id || "Delivery request";
-                const codeMsg = res?.confirmationCode ? ` Confirmation code: ${res.confirmationCode}.` : "";
-                showSuccessMessage(`${id} created successfully and waiting for rider assignment.${codeMsg}`);
-                return;
-            } catch (err) {
-                console.warn("Backend create failed, creating local request:", err.message);
-            }
+            const id = res?.$id || res?.id || "Delivery request";
+            const codeMsg = res?.confirmationCode ? ` Confirmation code: ${res.confirmationCode}.` : "";
+            showSuccessMessage(`${id} created successfully and waiting for rider assignment.${codeMsg}`);
+        } catch (err) {
+            showErrorMessage("Could not create this delivery: " + err.message);
         }
-
-        // Fallback for local testing / offline state
-        const nextNumber =
-            deliveries.length + 1;
-
-
-        const deliveryId =
-            `DL-${String(nextNumber)
-                .padStart(3, "0")}`;
-
-
-        const newDelivery = {
-
-            id: deliveryId,
-
-            customerName: customerName,
-
-            phone: phone,
-
-            destination: destination,
-
-            landmark: landmark,
-
-            itemDescription: itemDescription,
-
-            vehicle: vehicle,
-
-            notes: notes,
-
-            status: "OPEN",
-
-            rider: null
-
-        };
-
-
-        // Add new delivery to beginning
-        deliveries.unshift(
-            newDelivery
-        );
-
-
-        renderAll();
-
-
-        this.reset();
-
-
-        showSection(
-            "dashboard"
-        );
-
-
-        showSuccessMessage(
-            `${deliveryId} has been created successfully and is waiting for rider assignment.`
-        );
 
     });
 
@@ -995,12 +861,11 @@ updateStaffProfile();
 syncWithBackend();
 
 // Realtime subscription for live delivery updates
-if (typeof Wasili !== "undefined" && typeof Wasili.onDeliveryChange === "function") {
-    try {
-        Wasili.onDeliveryChange(() => {
-            syncWithBackend();
-        });
-    } catch (err) {
-        console.warn("Realtime listener not available:", err);
-    }
+Wasili.onDeliveryChange(() => {
+    syncWithBackend();
+});
+
+const retailerLogoutButton = document.getElementById("logoutButton");
+if (retailerLogoutButton) {
+    retailerLogoutButton.addEventListener("click", () => Wasili.logout());
 }

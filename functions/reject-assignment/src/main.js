@@ -5,7 +5,7 @@
 
 const { Client, TablesDB, Permission, Role } = require("node-appwrite");
 
-const DATABASE_ID = "6a8f0d44001c63c5f21b";
+const DATABASE_ID = "reflex";
 
 module.exports = async ({ req, res, error }) => {
   const callerId = req.headers["x-appwrite-user-id"];

@@ -13,3 +13,11 @@ npm-debug.log*
 
 .DS_Store
 Thumbs.db
+
+# Editor/OS cruft and anything that could hold local secrets
+.vscode/
+.idea/
+*.pem
+*.key
+*.p12
+*.log

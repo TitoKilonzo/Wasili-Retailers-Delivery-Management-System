@@ -1,9 +1,9 @@
 // Central Appwrite client for every page. Uses the global `Appwrite` object
 // loaded via CDN in each HTML file (see the <script> tag before this file).
 const APPWRITE_ENDPOINT = "https://fra.cloud.appwrite.io/v1";
-const APPWRITE_PROJECT_ID = "6a8f0a2f002f98babb3a";
+const APPWRITE_PROJECT_ID = "6a8ff12c000a501a8d98";
 
-const DATABASE_ID = "6a8f0d44001c63c5f21b";
+const DATABASE_ID = "reflex";
 
 const { Client, Account, TablesDB, Realtime, Channel, Functions, Query, ID } = Appwrite;
 
@@ -113,6 +113,12 @@ const Wasili = {
   async listRiders() {
     const res = await tablesDB.listRows({ databaseId: DATABASE_ID, tableId: "riders", queries: [] });
     return res.rows;
+  },
+
+  // A rider's own row - id matches their Appwrite user id (see
+  // scripts/setup.js and functions/assign-delivery).
+  async getRider(riderId) {
+    return tablesDB.getRow({ databaseId: DATABASE_ID, tableId: "riders", rowId: riderId });
   },
 
   // A rider updates their own operational status directly - this is a

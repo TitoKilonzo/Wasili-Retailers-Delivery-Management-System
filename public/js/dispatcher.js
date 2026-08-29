@@ -2,122 +2,89 @@
 
 // =========================================================
 // WASILI DISPATCHER PORTAL
-// Frontend prototype using temporary mock data
-// Backend integration will be added after the UI workflow
-// has been tested successfully.
+// Backed live by Appwrite (see js/wasili-client.js) - deliveries and
+// riders are loaded from TablesDB and kept in sync over Realtime.
 // =========================================================
 
+const dispatcherSession = Wasili.requireRole("dispatcher");
 
-// =========================================================
-// TEMPORARY MOCK DELIVERY DATA
-// =========================================================
+// Populated from the backend by refreshData(). Never mutated locally on
+// a guess - every write goes through a Function and the arrays are only
+// ever replaced wholesale by the next successful fetch, so the UI can't
+// drift from what Appwrite actually has stored.
+let deliveries = [];
+let riders = [];
 
-let deliveries = [
-    {
-        deliveryId: "DL-001",
-        customerName: "Jane Wanjiku",
-        customerPhone: "0712 345 678",
-        destination: "Westlands, Nairobi",
-        landmark: "Near Sarit Centre",
-        itemDescription: "Small electronics package",
-        vehicleType: "MOTORCYCLE",
-        deliveryStatus: "OPEN",
-        riderId: null
-    },
+// Row field names from TablesDB don't all match this file's original
+// mock shape (deliveryId/vehicleType/destination) - these two mappers
+// bridge that gap so the render functions below didn't need a rewrite.
+function mapDeliveryRow(row) {
+    return {
+        deliveryId: row.$id,
+        customerName: row.customerName,
+        customerPhone: row.customerPhone,
+        destination: row.address,
+        landmark: row.landmark || "",
+        itemDescription: row.itemDescription,
+        vehicleType: row.requiredVehicleType,
+        deliveryStatus: row.deliveryStatus,
+        riderId: row.riderId || null
+    };
+}
 
-    {
-        deliveryId: "DL-002",
-        customerName: "Peter Kamau",
-        customerPhone: "0798 456 123",
-        destination: "Kilimani, Nairobi",
-        landmark: "Yaya Centre",
-        itemDescription: "Documents and small package",
-        vehicleType: "BICYCLE",
-        deliveryStatus: "OPEN",
-        riderId: null
-    },
+function mapRiderRow(row) {
+    return {
+        riderId: row.$id,
+        name: row.name,
+        phone: row.phone,
+        vehicleType: row.vehicleType,
+        capacity: row.capacity,
+        activeDeliveries: row.activeDeliveries,
+        riderStatus: row.riderStatus
+    };
+}
 
-    {
-        deliveryId: "DL-003",
-        customerName: "Mary Njeri",
-        customerPhone: "0722 987 654",
-        destination: "CBD, Nairobi",
-        landmark: "Near Kencom",
-        itemDescription: "Clothing package",
-        vehicleType: "CAR",
-        deliveryStatus: "ASSIGNED",
-        riderId: "RDR-003"
-    },
+function showDispatcherError(message) {
+    console.error(message);
+    alert(message);
+}
 
-    {
-        deliveryId: "DL-004",
-        customerName: "John Maina",
-        customerPhone: "0701 333 999",
-        destination: "Ruiru",
-        landmark: "Near Ruiru Stadium",
-        itemDescription: "Hardware equipment",
-        vehicleType: "VAN",
-        deliveryStatus: "OPEN",
-        riderId: null
+async function refreshData() {
+    try {
+        const [deliveryRows, riderRows] = await Promise.all([
+            Wasili.listDeliveries(),
+            Wasili.listRiders()
+        ]);
+
+        deliveries = deliveryRows.map(mapDeliveryRow);
+        riders = riderRows.map(mapRiderRow);
+
+        renderAll();
+    } catch (err) {
+        console.error("Failed to load dispatcher data:", err);
+        showDispatcherError(
+            "Could not load deliveries/riders from the server: " + err.message
+        );
     }
-];
+}
 
+function updateDispatcherProfile() {
+    const nameElement = document.getElementById("dispatcherName");
+    const avatarElement = document.getElementById("dispatcherAvatar");
 
-// =========================================================
-// TEMPORARY MOCK RIDER DATA
-// =========================================================
-
-let riders = [
-    {
-        riderId: "RDR-001",
-        name: "Kevin Mwangi",
-        phone: "0711 222 333",
-        vehicleType: "MOTORCYCLE",
-        capacity: 5,
-        activeDeliveries: 2,
-        riderStatus: "AVAILABLE"
-    },
-
-    {
-        riderId: "RDR-002",
-        name: "Brian Otieno",
-        phone: "0700 555 888",
-        vehicleType: "BICYCLE",
-        capacity: 4,
-        activeDeliveries: 1,
-        riderStatus: "AVAILABLE"
-    },
-
-    {
-        riderId: "RDR-003",
-        name: "James Kariuki",
-        phone: "0715 111 222",
-        vehicleType: "CAR",
-        capacity: 3,
-        activeDeliveries: 3,
-        riderStatus: "AT_CAPACITY"
-    },
-
-    {
-        riderId: "RDR-004",
-        name: "Samuel Kamau",
-        phone: "0723 444 555",
-        vehicleType: "VAN",
-        capacity: 4,
-        activeDeliveries: 0,
-        riderStatus: "AVAILABLE"
-    },
-
-    {
-        riderId: "RDR-005",
-        name: "David Ochieng",
-        phone: "0790 666 777",
-        vehicleType: "TRUCK",
-        capacity: 3,
-        activeDeliveries: 3,
-        riderStatus: "AT_CAPACITY"
+    if (dispatcherSession && nameElement) {
+        nameElement.textContent = dispatcherSession.name;
     }
-];
+
+    if (dispatcherSession && avatarElement) {
+        avatarElement.textContent = dispatcherSession.name
+            .split(" ")
+            .map((name) => name[0])
+            .join("")
+            .substring(0, 2)
+            .toUpperCase();
+    }
+}
 
 
 // =========================================================
@@ -973,10 +940,16 @@ function renderAssignments() {
 
 
 // =========================================================
-// ASSIGN DELIVERY
+// ASSIGN / REASSIGN DELIVERY
 // =========================================================
+// Both flows call the same assign-delivery Function - it already
+// distinguishes a fresh OPEN->ASSIGNED assignment from a reassignment of
+// an ASSIGNED/ACCEPTED delivery (see functions/assign-delivery). This
+// file only picks the rider and lets the server enforce capacity,
+// vehicle compatibility, and status rules - those checks below are a
+// convenience filter for the prompt, not the source of truth.
 
-function assignDelivery(deliveryId) {
+async function assignDelivery(deliveryId) {
 
     const delivery =
         deliveries.find(
@@ -995,7 +968,8 @@ function assignDelivery(deliveryId) {
                 isVehicleCompatible(
                     delivery,
                     rider
-                )
+                ) &&
+                rider.riderId !== delivery.riderId
         );
 
 
@@ -1036,65 +1010,17 @@ function assignDelivery(deliveryId) {
 
 
     if (!selectedRider) {
-
-        alert(
-            "Rider not found."
-        );
-
+        alert("Rider not found.");
         return;
     }
 
-
-    if (!isVehicleCompatible(
-        delivery,
-        selectedRider
-    )) {
-
-        alert(
-            "This rider's vehicle is not compatible with the delivery requirement."
-        );
-
-        return;
+    try {
+        await Wasili.assignDelivery(delivery.deliveryId, selectedRider.riderId);
+        await refreshData();
+        alert(`${delivery.deliveryId} has been assigned to ${selectedRider.name}.`);
+    } catch (err) {
+        showDispatcherError("Could not assign this delivery: " + err.message);
     }
-
-
-    if (!isRiderOperational(
-        selectedRider
-    )) {
-
-        alert(
-            "This rider is not available or has no remaining capacity."
-        );
-
-        return;
-    }
-
-
-    delivery.riderId =
-        selectedRider.riderId;
-
-    delivery.deliveryStatus =
-        "ASSIGNED";
-
-
-    selectedRider.activeDeliveries += 1;
-
-
-    if (
-        selectedRider.activeDeliveries >=
-        selectedRider.capacity
-    ) {
-        selectedRider.riderStatus =
-            "AT_CAPACITY";
-    }
-
-
-    renderAll();
-
-
-    alert(
-        `${delivery.deliveryId} has been assigned to ${selectedRider.name}.`
-    );
 }
 
 
@@ -1103,52 +1029,10 @@ function assignDelivery(deliveryId) {
 // =========================================================
 
 function reassignDelivery(deliveryId) {
-
-    const delivery =
-        deliveries.find(
-            item =>
-                item.deliveryId === deliveryId
-        );
-
-
-    if (!delivery) return;
-
-
-    const currentRider =
-        getRiderById(
-            delivery.riderId
-        );
-
-
-    if (currentRider) {
-
-        currentRider.activeDeliveries =
-            Math.max(
-                currentRider.activeDeliveries - 1,
-                0
-            );
-
-
-        if (
-            currentRider.riderStatus ===
-            "AT_CAPACITY"
-        ) {
-            currentRider.riderStatus =
-                "AVAILABLE";
-        }
-    }
-
-
-    delivery.riderId = null;
-    delivery.deliveryStatus = "OPEN";
-
-
-    renderAll();
-
-
-    alert(
-        `${delivery.deliveryId} is now open for reassignment.`
-    );
+    // Reassigning just re-runs the assignment flow: the server already
+    // treats an ASSIGNED/ACCEPTED delivery as a reassignment target and
+    // releases the previous rider's capacity itself.
+    assignDelivery(deliveryId);
 }
 
 
@@ -1278,7 +1162,22 @@ function renderAll() {
 
 
 // =========================================================
-// INITIAL RENDER
+// INITIAL RENDER & BACKEND INITIALIZATION
 // =========================================================
 
+updateDispatcherProfile();
 renderAll();
+refreshData();
+
+if (typeof Wasili.onDeliveryChange === "function") {
+    Wasili.onDeliveryChange(() => refreshData());
+}
+
+if (typeof Wasili.onRiderChange === "function") {
+    Wasili.onRiderChange(() => refreshData());
+}
+
+const dispatcherLogoutButton = document.getElementById("logoutButton");
+if (dispatcherLogoutButton) {
+    dispatcherLogoutButton.addEventListener("click", () => Wasili.logout());
+}
