@@ -1177,6 +1177,13 @@ if (typeof Wasili.onRiderChange === "function") {
     Wasili.onRiderChange(() => refreshData());
 }
 
+// Realtime should catch every rider/retailer action instantly, but if a
+// WebSocket event is ever dropped (network blip, reconnect gap) the
+// dispatcher view could go stale silently. This periodic poll is a
+// low-cost safety net - it just re-runs the same refreshData() Realtime
+// already triggers, so it's a no-op if nothing changed.
+setInterval(() => refreshData(), 30000);
+
 const dispatcherLogoutButton = document.getElementById("logoutButton");
 if (dispatcherLogoutButton) {
     dispatcherLogoutButton.addEventListener("click", () => Wasili.logout());

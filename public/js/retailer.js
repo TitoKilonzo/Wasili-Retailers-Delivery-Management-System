@@ -865,6 +865,10 @@ Wasili.onDeliveryChange(() => {
     syncWithBackend();
 });
 
+// Safety net in case a Realtime event is ever dropped - a no-op re-fetch
+// if nothing actually changed.
+setInterval(() => syncWithBackend(), 30000);
+
 const retailerLogoutButton = document.getElementById("logoutButton");
 if (retailerLogoutButton) {
     retailerLogoutButton.addEventListener("click", () => Wasili.logout());

@@ -703,3 +703,7 @@ refreshData();
 if (typeof Wasili.onDeliveryChange === "function") {
     Wasili.onDeliveryChange(() => refreshData());
 }
+
+// Safety net in case a Realtime event is ever dropped - a no-op re-fetch
+// if nothing actually changed.
+setInterval(() => refreshData(), 30000);

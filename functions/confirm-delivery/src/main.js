@@ -3,7 +3,7 @@
 // scripts/setup.js) - this Function is the only thing that can compare the
 // entered code against the real one, using its dynamic API key.
 
-const { Client, TablesDB } = require("node-appwrite");
+const { Client, TablesDB, Permission, Role } = require("node-appwrite");
 
 const DATABASE_ID = "reflex";
 
@@ -34,11 +34,22 @@ module.exports = async ({ req, res, error }) => {
     const history = JSON.parse(delivery.history || "[]");
     history.push({ status: "DELIVERED", at: new Date().toISOString(), byUserId: callerId, byRole: "rider", confirmed: true });
 
+    // Set permissions explicitly on every write rather than relying on
+    // whatever was already on the row - keeps dispatcher/retailer/rider
+    // visibility (including Realtime, which is permission-gated) correct
+    // at every stage instead of silently drifting. Everyone who touched
+    // the delivery keeps read access to the completed record.
     const updated = await tablesDB.updateRow({
       databaseId: DATABASE_ID,
       tableId: "deliveries",
       rowId: deliveryId,
       data: { deliveryStatus: "DELIVERED", history: JSON.stringify(history) },
+      permissions: [
+        Permission.read(Role.label("dispatcher")),
+        Permission.update(Role.label("dispatcher")),
+        Permission.read(Role.user(delivery.retailerStaffId)),
+        Permission.read(Role.user(callerId)),
+      ],
     });
 
     const rider = await tablesDB.getRow({ databaseId: DATABASE_ID, tableId: "riders", rowId: callerId });

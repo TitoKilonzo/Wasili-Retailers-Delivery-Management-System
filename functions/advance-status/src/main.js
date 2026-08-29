@@ -4,7 +4,7 @@
 // needs the confirmation-code check that lives outside this function's
 // data access (see confirm-delivery for why).
 
-const { Client, TablesDB } = require("node-appwrite");
+const { Client, TablesDB, Permission, Role } = require("node-appwrite");
 
 const DATABASE_ID = "reflex";
 const FORWARD_FLOW = ["OPEN", "ASSIGNED", "ACCEPTED", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"];
@@ -42,11 +42,22 @@ module.exports = async ({ req, res, error }) => {
     const history = JSON.parse(delivery.history || "[]");
     history.push({ status, at: new Date().toISOString(), byUserId: callerId, byRole: "rider" });
 
+    // Set permissions explicitly on every write rather than relying on
+    // whatever was already on the row - keeps dispatcher/retailer/rider
+    // visibility (including Realtime, which is permission-gated) correct
+    // at every stage instead of silently drifting.
     const updated = await tablesDB.updateRow({
       databaseId: DATABASE_ID,
       tableId: "deliveries",
       rowId: deliveryId,
       data: { deliveryStatus: status, history: JSON.stringify(history) },
+      permissions: [
+        Permission.read(Role.label("dispatcher")),
+        Permission.update(Role.label("dispatcher")),
+        Permission.read(Role.user(delivery.retailerStaffId)),
+        Permission.read(Role.user(callerId)),
+        Permission.update(Role.user(callerId)),
+      ],
     });
 
     return res.json(updated);

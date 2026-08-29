@@ -4,7 +4,7 @@
 // section 10's "delivery already completed should not accidentally be
 // assigned again" by refusing to cancel a DELIVERED/CANCELLED row.
 
-const { Client, TablesDB, Users } = require("node-appwrite");
+const { Client, TablesDB, Users, Permission, Role } = require("node-appwrite");
 
 const DATABASE_ID = "reflex";
 
@@ -58,11 +58,27 @@ module.exports = async ({ req, res, error }) => {
     const history = JSON.parse(delivery.history || "[]");
     history.push({ status: "CANCELLED", at: new Date().toISOString(), byUserId: callerId, byRole: isDispatcher ? "dispatcher" : "retailerstaff", note: reason || undefined });
 
+    // Set permissions explicitly on every write rather than relying on
+    // whatever was already on the row - keeps dispatcher/retailer/rider
+    // visibility (including Realtime, which is permission-gated) correct
+    // instead of silently drifting. Terminal state, so no one keeps
+    // update access, but everyone who touched it keeps read access for
+    // their own records.
+    const cancelPermissions = [
+      Permission.read(Role.label("dispatcher")),
+      Permission.update(Role.label("dispatcher")),
+      Permission.read(Role.user(delivery.retailerStaffId)),
+    ];
+    if (delivery.riderId) {
+      cancelPermissions.push(Permission.read(Role.user(delivery.riderId)));
+    }
+
     const updated = await tablesDB.updateRow({
       databaseId: DATABASE_ID,
       tableId: "deliveries",
       rowId: deliveryId,
       data: { deliveryStatus: "CANCELLED", history: JSON.stringify(history) },
+      permissions: cancelPermissions,
     });
 
     return res.json(updated);

@@ -2,7 +2,7 @@
 // Contract section 5 treats ASSIGNED and ACCEPTED as distinct: a dispatcher
 // choosing a rider isn't the same as that rider acknowledging the job.
 
-const { Client, TablesDB } = require("node-appwrite");
+const { Client, TablesDB, Permission, Role } = require("node-appwrite");
 
 const DATABASE_ID = "reflex";
 
@@ -30,11 +30,22 @@ module.exports = async ({ req, res, error }) => {
     const history = JSON.parse(delivery.history || "[]");
     history.push({ status: "ACCEPTED", at: new Date().toISOString(), byUserId: callerId, byRole: "rider" });
 
+    // Set permissions explicitly on every write rather than relying on
+    // whatever was already on the row - keeps dispatcher/retailer/rider
+    // visibility (including Realtime, which is permission-gated) correct
+    // at every stage instead of silently drifting.
     const updated = await tablesDB.updateRow({
       databaseId: DATABASE_ID,
       tableId: "deliveries",
       rowId: deliveryId,
       data: { deliveryStatus: "ACCEPTED", history: JSON.stringify(history) },
+      permissions: [
+        Permission.read(Role.label("dispatcher")),
+        Permission.update(Role.label("dispatcher")),
+        Permission.read(Role.user(delivery.retailerStaffId)),
+        Permission.read(Role.user(callerId)),
+        Permission.update(Role.user(callerId)),
+      ],
     });
 
     return res.json(updated);
