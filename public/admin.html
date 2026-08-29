@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wasili | Admin Portal</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <img src="favicon.svg" alt="Wasili Logo" class="brand-logo" width="48" height="48">
+                <div>
+                    <h1>Wasili</h1>
+                    <span>Admin Portal</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-link active" data-section="dashboard">
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-link" data-section="users">
+                    <span>Users</span>
+                </button>
+                <button class="nav-link" data-section="riders">
+                    <span>Riders</span>
+                </button>
+                <button class="nav-link" data-section="records">
+                    <span>Records</span>
+                </button>
+                <button class="nav-link" data-section="activity">
+                    <span>Activity</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="staff-info">
+                    <div class="staff-avatar" id="adminAvatar">AD</div>
+                    <div>
+                        <strong id="adminName">Admin</strong>
+                        <span>Operations Oversight</span>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary" id="logoutButton" style="width: 100%; margin-top: 12px;">
+                    Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-area">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="menu-toggle" id="menuToggle" aria-label="Open navigation"></button>
+                    <div>
+                        <h2 id="pageTitle">Dashboard</h2>
+                        <p id="pageSubtitle">Manage riders, records, and operational activity</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <section class="portal-section active-section" id="dashboard">
+                    <div class="page-heading">
+                        <div>
+                            <h2>Admin Overview</h2>
+                            <p>Monitor rider health, operational records, and live delivery flow.</p>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-top">
+                                <span class="stat-label">Riders</span>
+                            </div>
+                            <div class="stat-value" id="totalRiders">0</div>
+                            <span class="stat-description">Active rider accounts in the system</span>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-top">
+                                <span class="stat-label">Available</span>
+                            </div>
+                            <div class="stat-value" id="availableRiders">0</div>
+                            <span class="stat-description">Riders ready for assignment</span>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-top">
+                                <span class="stat-label">Open Requests</span>
+                            </div>
+                            <div class="stat-value" id="openDeliveries">0</div>
+                            <span class="stat-description">Deliveries waiting for assignment</span>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-top">
+                                <span class="stat-label">In Progress</span>
+                            </div>
+                            <div class="stat-value" id="activeAssignments">0</div>
+                            <span class="stat-description">Deliveries already assigned on route</span>
+                        </div>
+                    </div>
+
+                    <div class="card-list">
+                        <div class="card admin-card">
+                            <div class="card-header">
+                                <div>
+                                    <h3 class="card-title">Operational Snapshot</h3>
+                                    <p class="card-subtitle">Latest rider and assignment status</p>
+                                </div>
+                            </div>
+                            <div id="dashboardSummary" class="info-list"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="portal-section" id="users">
+                    <div class="page-heading">
+                        <div>
+                            <h2>Users</h2>
+                            <p>Operational account overview and access controls.</p>
+                        </div>
+                    </div>
+
+                    <div class="card admin-card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Account Registry</h3>
+                                <p class="card-subtitle">Riders and assigned operational records</p>
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                        <th>Vehicle</th>
+                                        <th>Capacity</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="portal-section" id="riders">
+                    <div class="page-heading">
+                        <div>
+                            <h2>Riders</h2>
+                            <p>Manage rider availability, vehicle type, and capacity.</p>
+                        </div>
+                    </div>
+
+                    <div class="card admin-card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Rider Management</h3>
+                                <p class="card-subtitle">Update rider status and operational limits</p>
+                            </div>
+                        </div>
+
+                        <div id="riderManagementList" class="stack-list"></div>
+                    </div>
+                </section>
+
+                <section class="portal-section" id="records">
+                    <div class="page-heading">
+                        <div>
+                            <h2>Operational Records</h2>
+                            <p>View live delivery records and rider assignments.</p>
+                        </div>
+                    </div>
+
+                    <div class="card admin-card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Delivery Records</h3>
+                                <p class="card-subtitle">Open, active, and completed deliveries</p>
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Customer</th>
+                                        <th>Location</th>
+                                        <th>Vehicle</th>
+                                        <th>Rider</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recordTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="portal-section" id="activity">
+                    <div class="page-heading">
+                        <div>
+                            <h2>Activity</h2>
+                            <p>Audit trail and recent operational activity.</p>
+                        </div>
+                    </div>
+
+                    <div class="card admin-card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Audit Activity</h3>
+                                <p class="card-subtitle">Recent routing and status transitions</p>
+                            </div>
+                        </div>
+                        <div id="activityList" class="info-list"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@26.0.0"></script>
+    <script src="js/wasili-client.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
