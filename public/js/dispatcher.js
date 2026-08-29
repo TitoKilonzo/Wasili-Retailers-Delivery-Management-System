@@ -981,55 +981,80 @@ async function assignDelivery(deliveryId) {
                 rider.riderId !== delivery.riderId
         );
 
+    openRiderModal(delivery, compatibleRiders);
+}
+
+// =========================================================
+// ASSIGN RIDER MODAL
+// Replaces the old prompt()-based picker with an actual clickable
+// list of every currently compatible rider - the dispatcher sees
+// real names, vehicles and remaining capacity instead of typing a
+// raw rider ID copied out of a browser prompt.
+// =========================================================
+
+const riderModalOverlay = document.getElementById("riderModalOverlay");
+const riderModalList = document.getElementById("riderModalList");
+const riderModalSubtitle = document.getElementById("riderModalSubtitle");
+const riderModalClose = document.getElementById("riderModalClose");
+
+function openRiderModal(delivery, compatibleRiders) {
+    if (!riderModalOverlay) return;
+
+    riderModalSubtitle.textContent =
+        `${delivery.customerName} - ${getVehicleLabel(delivery.vehicleType)} required`;
+
+    riderModalList.innerHTML = "";
 
     if (compatibleRiders.length === 0) {
-
-        alert(
-            "No suitable rider is currently available for this delivery."
-        );
-
-        return;
-    }
-
-
-    const riderOptions =
+        riderModalList.innerHTML =
+            `<div class="rider-modal-empty">No suitable rider is currently available for this delivery.</div>`;
+    } else {
         compatibleRiders
-            .map(
-                rider =>
-                    `${rider.riderId} - ${rider.name} (${getVehicleLabel(rider.vehicleType)}, ${getRemainingCapacity(rider)} slots remaining)`
-            )
-            .join("\n");
-
-
-    const selectedRiderId =
-        prompt(
-            `Select a suitable rider:\n\n${riderOptions}\n\nEnter Rider ID:`
-        );
-
-
-    if (!selectedRiderId) return;
-
-
-    const selectedRider =
-        riders.find(
-            rider =>
-                rider.riderId.toUpperCase() ===
-                selectedRiderId.trim().toUpperCase()
-        );
-
-
-    if (!selectedRider) {
-        alert("Rider not found.");
-        return;
+            .slice()
+            .sort((a, b) => getRemainingCapacity(b) - getRemainingCapacity(a))
+            .forEach(rider => {
+                const option = document.createElement("button");
+                option.type = "button";
+                option.className = "rider-modal-option";
+                option.innerHTML = `
+                    <div>
+                        <div class="rider-modal-option-name">${rider.name}</div>
+                        <div class="rider-modal-option-meta">
+                            ${getVehicleLabel(rider.vehicleType)} &middot; ${rider.phone}
+                        </div>
+                    </div>
+                    <div class="rider-modal-option-slots">
+                        ${getRemainingCapacity(rider)} slot${getRemainingCapacity(rider) === 1 ? "" : "s"} free
+                    </div>
+                `;
+                option.addEventListener("click", () => confirmAssignRider(delivery, rider));
+                riderModalList.appendChild(option);
+            });
     }
 
+    riderModalOverlay.classList.add("open");
+}
+
+function closeRiderModal() {
+    if (riderModalOverlay) riderModalOverlay.classList.remove("open");
+}
+
+async function confirmAssignRider(delivery, rider) {
+    closeRiderModal();
     try {
-        await Wasili.assignDelivery(delivery.deliveryId, selectedRider.riderId);
+        await Wasili.assignDelivery(delivery.deliveryId, rider.riderId);
         await refreshData();
-        alert(`${delivery.deliveryId} has been assigned to ${selectedRider.name}.`);
+        alert(`${delivery.deliveryId} has been assigned to ${rider.name}.`);
     } catch (err) {
         showDispatcherError("Could not assign this delivery: " + err.message);
     }
+}
+
+if (riderModalClose) riderModalClose.addEventListener("click", closeRiderModal);
+if (riderModalOverlay) {
+    riderModalOverlay.addEventListener("click", (e) => {
+        if (e.target === riderModalOverlay) closeRiderModal();
+    });
 }
 
 

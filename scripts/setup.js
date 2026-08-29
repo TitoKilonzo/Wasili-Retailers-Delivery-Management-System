@@ -212,6 +212,10 @@ const seedAccounts = [
   { name: "Brian Otieno", username: "brian", phone: "0711000003", role: "rider", vehicleType: "BICYCLE", capacity: 2 },
   { name: "Faith Wanjiru", username: "faith", phone: "0711000004", role: "rider", vehicleType: "MOTORCYCLE", capacity: 4 },
   { name: "Kevin Mutiso", username: "kevin", phone: "0711000005", role: "rider", vehicleType: "VAN", capacity: 6 },
+  { name: "Mercy Njeri", username: "mercy", phone: "0711000006", role: "rider", vehicleType: "MOTORCYCLE", capacity: 3 },
+  { name: "Grace Achieng", username: "grace", phone: "0711000007", role: "rider", vehicleType: "CAR", capacity: 3 },
+  { name: "Daniel Kiptoo", username: "daniel", phone: "0711000008", role: "rider", vehicleType: "TRUCK", capacity: 10 },
+  { name: "Samuel Mwangi", username: "samuel", phone: "0711000009", role: "rider", vehicleType: "BICYCLE", capacity: 2 },
 ];
 
 // Login runs on username + password now (see public/index.html /
