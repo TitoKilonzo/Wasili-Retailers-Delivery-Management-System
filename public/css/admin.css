@@ -198,6 +198,29 @@ body {
     font-size: 0.8rem;
 }
 
+.info-list,
+.stack-list {
+    display: grid;
+    gap: var(--space-3);
+}
+
+.info-item,
+.admin-rider-row {
+    font-size: 0.82rem;
+}
+
+.info-item strong,
+.admin-rider-row strong {
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.info-item span,
+.admin-rider-meta {
+    font-size: 0.77rem;
+    color: var(--gray-500);
+}
+
 .stats-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 24px;
