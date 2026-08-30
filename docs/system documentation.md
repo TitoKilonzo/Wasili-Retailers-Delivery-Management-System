@@ -362,7 +362,7 @@ The app treats admin as an Appwrite label and portal gate rather than a totally 
 
 ## 13. Overall architectural summary
 
-The system is structured like this:
+The system structure
 
 - Browser UI
   - selects role
@@ -386,16 +386,116 @@ The system is structured like this:
   - status progression
   - audit trail
 
-This gives a clean separation between:
+## 14. Component diagram
 
-- UI and presentation
-- identity and access control
-- data and business rules
-- operational accountability
+```mermaid
+flowchart LR
+    U[User] --> P[Portal UI\nindex / retailer / dispatcher / rider / admin]
+    P --> C[Shared client\nwasili-client.js]
 
+    C --> A[Appwrite Auth]
+    C --> T[Appwrite TablesDB]
+    C --> R[Appwrite Realtime]
+    C --> F[Appwrite Functions]
 
-If you want, I can turn this into a more formal architecture document with:
-1. a component diagram,
-2. a database schema table,
-3. a sequence flow for assigning a delivery,
-4. and a portal-by-portal responsibility matrix.
+    F --> BR[Business rules\nstatus validation\ncapacity checks\nvehicle compatibility]
+    F --> H[History + accountability log]
+
+    T --> D[deliveries table]
+    T --> Rr[riders table]
+    T --> Cc[delivery_confirmations table]
+
+    R --> U
+```
+
+## 15. Database schema summary
+
+| Table | Purpose | Key fields |
+|---|---|---|
+| riders | rider operational state | name, phone, vehicleType, capacity, activeDeliveries, riderStatus |
+| deliveries | each retailer request and its lifecycle | retailerStaffId, customerName, customerPhone, address, itemDescription, requiredVehicleType, riderId, dispatcherId, assignedAt, deliveryStatus, history |
+| delivery_confirmations | confirmation codes for a completed delivery | code |
+
+### riders table
+
+| Field | Type | Notes |
+|---|---|---|
+| name | string | rider display name |
+| phone | string | contact info |
+| vehicleType | enum | BICYCLE, MOTORCYCLE, CAR, VAN, TRUCK |
+| capacity | integer | maximum active deliveries |
+| activeDeliveries | integer | current active count |
+| riderStatus | enum | AVAILABLE, AT_CAPACITY, OFFLINE, UNAVAILABLE |
+
+### deliveries table
+
+| Field | Type | Notes |
+|---|---|---|
+| retailerStaffId | string | user who created the request |
+| customerName | string | customer name |
+| customerPhone | string | customer contact |
+| address | string | destination |
+| itemDescription | string | item contents/summary |
+| requiredVehicleType | enum | required vehicle type |
+| riderId | string | assigned rider, if any |
+| dispatcherId | string | assigning dispatcher |
+| assignedAt | string | assignment timestamp |
+| deliveryStatus | enum | OPEN, ASSIGNED, ACCEPTED, PICKED_UP, OUT_FOR_DELIVERY, DELIVERED, CANCELLED |
+| history | string | JSON array of status updates |
+
+## 16. Delivery assignment sequence flow
+
+```mermaid
+sequenceDiagram
+    participant D as Dispatcher
+    participant P as Portal JS
+    participant F as assign-delivery Function
+    participant DB as TablesDB
+    participant R as Rider Row
+
+    D->>P: Select rider for delivery
+    P->>F: assignDelivery(deliveryId, riderId)
+    F->>DB: Load delivery and rider rows
+    F->>F: Validate status, capacity, vehicle compatibility
+    alt rider is valid
+        F->>DB: Update delivery to ASSIGNED
+        F->>DB: Update rider activeDeliveries
+        F-->>P: success response
+        DB-->>P: Realtime update event
+        P-->>D: dashboard refresh
+    else invalid
+        F-->>P: reject with business-rule error
+        P-->>D: show message and keep status unchanged
+    end
+```
+
+### Assignment flow 
+
+1. The dispatcher opens a delivery and selects a rider.
+2. The browser calls the assign-delivery function.
+3. The function checks the request status, rider status, capacity, and vehicle compatibility.
+4. If valid, it updates the delivery record and rider active counter.
+5. Realtime pushes the update to all listening dashboards.
+6. The rider must then accept the assignment before the job moves forward.
+
+## 17. Portal responsibility matrix
+
+| Portal | User role | Main responsibilities |
+|---|---|---|
+| Sign-in | All | login, role selection, redirect based on Appwrite label |
+| Retailer | RetailerStaff | create requests, view own workload, cancel open requests |
+| Dispatcher | Dispatcher | assign/reassign riders, monitor capacity, manage operations |
+| Rider | Rider | accept/reject assignments, update status, confirm delivery |
+| Admin | Admin | operational summary, rider oversight, user visibility, records and audit review |
+
+## 18. Summary
+
+Wasili follows a clean Appwrite-first architecture:
+
+- the front-end is stateless and portal-driven,
+- Appwrite Auth handles identity,
+- TablesDB stores operational data,
+- Realtime keeps the dashboards in sync,
+- Functions enforce the real business rules that the browser cannot be trusted to enforce.
+
+That separation keeps the system simple to operate while still enforcing the contract rules around capacity, compatibility, status sequencing, and accountability.
