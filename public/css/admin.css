@@ -1,6 +1,6 @@
 /* =========================================================
    WASILI ADMIN PORTAL
-   Shared layout and styling aligned with other dashboards.
+   Matches the shared retailer/dispatcher dashboard system.
    ========================================================= */
 
 :root {
@@ -8,10 +8,235 @@
     --admin-line: rgba(255, 255, 255, 0.06);
 }
 
-.admin-card {
+body {
+    font-family: 'Lato', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.brand h1 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--green-400);
+}
+
+.brand span {
+    display: block;
+    margin-top: 3px;
+    font-size: 0.72rem;
+    color: var(--gray-500);
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
     margin-top: var(--space-6);
 }
 
+.nav-link {
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--gray-600);
+    padding: 11px 12px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-align: left;
+    transition: var(--transition);
+}
+
+.nav-link:hover {
+    background: rgba(34, 197, 94, 0.08);
+    color: var(--text-primary);
+}
+
+.nav-link.active {
+    background: var(--green-dark);
+    color: #ffffff;
+    border-color: rgba(34, 197, 94, 0.15);
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--gray-200);
+}
+
+.staff-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.staff-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--green-100);
+    color: var(--green-700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.staff-info strong {
+    display: block;
+    color: var(--gray-800);
+    font-size: 0.85rem;
+}
+
+.staff-info span {
+    display: block;
+    margin-top: 3px;
+    color: var(--gray-500);
+    font-size: 0.7rem;
+}
+
+.topbar {
+    min-height: 64px;
+    background: var(--background-secondary);
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.topbar h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--gray-700);
+}
+
+.topbar p {
+    margin: 4px 0 0;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+.page-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+.page-heading h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    color: var(--gray-900);
+}
+
+.page-heading p {
+    margin: 6px 0 0;
+    color: var(--gray-500);
+    font-size: 0.85rem;
+}
+
+.card,
+.stat-card,
+.admin-card,
+.delivery-request-card,
+.rider-card,
+.assignment-card,
+.form-section-card,
+.delivery-item {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-primary);
+}
+
+.card {
+    padding: 28px;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.card-title {
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--gray-900);
+}
+
+.card-subtitle {
+    margin: 5px 0 0;
+    color: var(--gray-500);
+    font-size: 0.8rem;
+}
+
+.stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+    margin-bottom: 36px;
+}
+
+.stat-card {
+    padding: 24px;
+}
+
+.stat-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.stat-label {
+    color: var(--gray-500);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.stat-value {
+    color: var(--gray-900);
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-top: 12px;
+}
+
+.stat-description {
+    display: block;
+    margin-top: var(--space-2);
+    color: var(--gray-500);
+    font-size: 0.72rem;
+}
+
+.card-list,
 .info-list,
 .stack-list {
     display: grid;
@@ -75,23 +300,6 @@
     width: 74px;
 }
 
-@media (max-width: 760px) {
-    .admin-rider-row,
-    .info-item {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .admin-rider-actions {
-        width: 100%;
-        justify-content: flex-start;
-    }
-}
-
-/* =========================================================
-   RECORDS FILTER BAR
-   ========================================================= */
-
 .admin-filter-bar {
     display: flex;
     flex-wrap: wrap;
@@ -108,34 +316,47 @@
     flex: 0 0 auto;
 }
 
-/* Row actions in the Records table */
-.admin-row-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+.table-wrapper {
+    overflow-x: auto;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
 }
 
-.admin-row-actions .btn {
-    padding: 6px 10px;
-    font-size: 0.78rem;
-    min-width: 0;
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-.admin-row-actions .btn-danger {
-    background: transparent;
-    border: 1px solid rgba(239, 68, 68, 0.4);
-    color: #f87171;
+.data-table th,
+.data-table td {
+    padding: 16px 20px;
+    text-align: left;
+    border-bottom: 1px solid var(--card-border);
+    font-size: 14px;
 }
 
-.admin-row-actions .btn-danger:hover {
-    background: rgba(239, 68, 68, 0.1);
+.data-table th {
+    background: #121815;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-/* =========================================================
-   ASSIGN RIDER MODAL
-   Same pattern as the dispatcher portal's picker, restyled to this
-   file's tokens so admin doesn't depend on dispatcher.css loading.
-   ========================================================= */
+.data-table td {
+    color: var(--text-secondary);
+}
+
+.data-table tbody tr {
+    transition: background var(--transition);
+}
+
+.data-table tbody tr:hover {
+    background: #1b221f;
+}
 
 .rider-modal-overlay {
     display: none;
@@ -155,7 +376,7 @@
 .rider-modal {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    border-radius: var(--radius-md, 12px);
+    border-radius: var(--radius-md);
     width: 100%;
     max-width: 520px;
     max-height: 82vh;
@@ -189,13 +410,8 @@
     border: none;
     color: var(--text-muted);
     font-size: 20px;
-    line-height: 1;
     cursor: pointer;
     padding: 4px;
-}
-
-.rider-modal-close:hover {
-    color: var(--text-primary);
 }
 
 .rider-modal-list {
@@ -253,7 +469,24 @@
     font-weight: 600;
 }
 
+@media (max-width: 1200px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 760px) {
+    .admin-rider-row,
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .admin-rider-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
     .admin-filter-bar {
         flex-direction: column;
     }
